@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0c0d0d">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<title>Pocket Survival</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0d0d;--panel:#151818;--panel2:#1d2121;--line:#2c3232;--bone:#e9e4d8;--dim:#8f958f;--blood:#c8342c;--amber:#e3a33b;--green:#7fc95a;--accent:#c8342c}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--bone);font:14px/1.45 Inter,system-ui,sans-serif}
+h1,h2,h3,.type{font-family:'Special Elite',monospace;letter-spacing:.5px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--bone);padding:8px 12px;border-radius:6px}
+button:hover:not(:disabled){border-color:var(--accent)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+input,select{font:inherit;background:#0f1111;color:var(--bone);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+label{display:block;margin:14px 0 6px;color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:1px}
+.row{display:flex;gap:8px}.row>*{flex:1}.row>.shrink{flex:0 0 auto;width:auto}
+#app{display:grid;grid-template-columns:370px 1fr;height:100vh}
+#panel{overflow-y:auto;background:var(--panel);border-right:1px solid var(--line);padding:14px}
+#mapwrap{position:relative}
+#map{position:absolute;inset:0;background:#111}
+#tabs,#handle,#hud{display:none}
+@media(max-width:820px){
+  html,body{overscroll-behavior:none;font-size:15px}
+  button,.chip{touch-action:manipulation}
+  input,select{font-size:16px}
+  #app{display:block;height:100dvh}
+  #mapwrap{position:fixed;inset:0}
+  #panel{position:fixed;left:0;right:0;bottom:0;height:var(--sheetH);z-index:1100;border-right:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0;
+    padding:0 12px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.6);transition:height .25s ease;overscroll-behavior:contain}
+  #panel{--sheetH:46dvh}#panel.min{--sheetH:128px}#panel.max{--sheetH:84dvh}
+  #handle{display:block;position:sticky;top:0;background:var(--panel);padding:8px 0 4px;z-index:2;cursor:grab}
+  #handle i{display:block;width:44px;height:5px;border-radius:3px;background:#3c4444;margin:0 auto}
+  #tabs{display:flex;gap:6px;position:sticky;top:17px;background:var(--panel);padding:4px 0 8px;z-index:2}
+  #tabs button{flex:1;padding:10px 6px;font-size:14px;position:relative}
+  #tabs button.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 22%,var(--panel2))}
+  #tabs .dot{position:absolute;top:6px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  #panel .clock,#panel #bars{display:none}
+  #panel[data-tab="here"] .tab-bag,#panel[data-tab="here"] .tab-log,#panel[data-tab="bag"] .tab-here,#panel[data-tab="bag"] .tab-log,#panel[data-tab="log"] .tab-here,#panel[data-tab="log"] .tab-bag{display:none}
+  .box{margin:6px 0}
+  .acts button{flex:1 1 30%;padding:12px 8px;font-size:14px}
+  #aDo{padding:10px 16px}
+  .it{padding:8px}.it button{padding:8px 12px;font-size:13px}
+  #hud{display:block;position:fixed;top:0;left:0;right:0;z-index:1050;padding:calc(env(safe-area-inset-top) + 8px) 10px 8px;
+    background:linear-gradient(rgba(12,13,13,.95),rgba(12,13,13,.75));border-bottom:1px solid var(--line)}
+  #hud.hidden{display:none}
+  #hud .hrow{display:flex;align-items:center;gap:8px}
+  #hud .ht{font-family:'Special Elite';font-size:17px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #hud .hrow button{padding:6px 10px}
+  #hud .hb{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;font-size:12px}
+  #hud .hb div{display:flex;align-items:center;gap:4px}
+  #hud .hb .bar{flex:1;height:7px}
+  .leaflet-top{top:calc(env(safe-area-inset-top) + 74px)}
+  .leaflet-control-zoom{display:none}
+  #banner{top:calc(env(safe-area-inset-top) + 10px);width:94%}
+  #banner button{padding:10px 14px}
+  .overlay{align-items:flex-end;padding:0}
+  .card{border-radius:16px 16px 0 0;max-height:92dvh;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-width:100%}
+  #setup .card,#help .card{max-height:100dvh;border-radius:0;height:100dvh}
+  .btns button{padding:14px 12px;font-size:15px}
+  .poi span{width:34px;height:34px;font-size:18px}
+  .leaflet-popup-content{font-size:15px}.pp button{padding:12px}
+}
+.overlay{position:fixed;inset:0;background:rgba(5,6,6,.88);display:flex;align-items:center;justify-content:center;z-index:2000;padding:16px}
+.hidden{display:none!important}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;max-width:560px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 10px 40px #000}
+.card h1{margin:0;font-size:34px;color:var(--accent)}
+.sub{color:var(--dim);margin:2px 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 10px;border-radius:20px;border:1px solid var(--line);background:#101212;font-size:13px;user-select:none}
+.chip.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 25%,#101212)}
+.scen{flex:1 1 150px;border-radius:8px;padding:10px;text-align:left}
+.scen b{display:block;font-family:'Special Elite';font-size:15px}
+.scen small{color:var(--dim)}
+#status{margin-top:10px;color:var(--amber);min-height:20px}
+.big{width:100%;margin-top:16px;padding:12px;font-size:16px}
+details{margin-top:14px;color:var(--dim)}details input{margin-top:6px}
+#banner{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;background:rgba(21,24,24,.95);border:1px solid var(--accent);border-radius:8px;padding:10px 14px;display:flex;gap:10px;align-items:center;max-width:94%;flex-wrap:wrap;justify-content:center}
+#banner span{font-family:'Special Elite'}
+.clock{display:flex;justify-content:space-between;align-items:baseline}
+.clock .t{font-family:'Special Elite';font-size:22px}
+.clock .night{color:#7f9cff}
+.bars{display:grid;grid-template-columns:70px 1fr 34px;gap:4px 8px;align-items:center;margin:10px 0;font-size:12px;color:var(--dim)}
+.bar{height:8px;background:#0b0c0c;border-radius:4px;overflow:hidden}.bar i{display:block;height:100%}
+.box{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;margin:10px 0}
+.box h3{margin:0 0 6px;font-size:15px}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;text-transform:uppercase}
+.d-low{background:#23401f;color:#9fe08a}.d-moderate{background:#4a3a12;color:#f2c060}.d-high{background:#5a1e16;color:#ff9a85}.d-overrun{background:#c8342c;color:#fff}.d-safe{background:#1d3d52;color:#8fd3ff}
+.inv{display:flex;flex-direction:column;gap:4px}
+.it{display:flex;align-items:center;gap:6px;font-size:13px;background:#111414;border-radius:6px;padding:4px 6px}
+.it .nm{flex:1}.it small{color:var(--dim)}
+.it button{padding:2px 8px;font-size:12px}
+#log{display:flex;flex-direction:column;gap:6px;font-size:13px}
+#log div{border-left:2px solid var(--line);padding-left:8px}
+#log .ts{color:var(--dim);font-size:11px;font-family:'Special Elite'}
+#log .bad{border-color:var(--blood)}#log .good{border-color:var(--green)}#log .sys{border-color:var(--amber);color:#e9d3a8}
+#log .ai{border-color:#7b5cff;font-style:italic;color:#d6cfff}
+.poi{background:none;border:none}
+.poi span{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(15,17,17,.85);border:1px solid #444;font-size:14px}
+.poi.searched span{opacity:.45}
+.poi.here span{border:2px solid var(--bone)}
+.me span{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--bone);font-size:20px;box-shadow:0 0 0 4px rgba(233,228,216,.3)}
+.org span,.evac span{display:flex;align-items:center;justify-content:center;width:32px;height:32px;font-size:24px}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel);color:var(--bone);border:1px solid var(--line)}
+.leaflet-popup-content{margin:10px 12px;font:13px Inter,sans-serif}
+.pp h4{margin:0 0 2px;font-family:'Special Elite';font-size:15px}
+.pp .meta{color:var(--dim);margin-bottom:6px}
+.pp button{width:100%;margin-top:6px}
+.leaflet-container a.leaflet-popup-close-button{color:var(--dim)}
+.btns{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.btns button{text-align:left;padding:10px 12px}
+.btns button small{float:right;color:var(--dim)}
+.mtitle{font-size:22px;margin:0 0 8px;color:var(--accent)}
+.hint{color:var(--dim);font-size:12px}
+#sugg .chip{cursor:pointer;font-size:12px;padding:4px 9px}
+.encin{margin-top:10px}
+.story p{margin:6px 0}
+.art{display:block;width:100%;height:auto;border-radius:10px;border:1px solid var(--line);margin:0 0 12px;background:#111}
+@media(max-width:820px){.art{margin-top:-4px}}
+.darktiles{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9)}
+#status button{padding:4px 8px;margin:4px 4px 0 0}
+#help ul{padding-left:18px;margin:4px 0 10px}#help li{margin:3px 0}#help h3{margin:12px 0 2px;font-size:16px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="panel" data-tab="here">
+    <div id="handle"><i></i></div>
+    <div id="tabs"><button data-t="here" class="on">📍 Here</button><button data-t="bag">🎒 Bag <span id="bagN"></span></button><button data-t="log">📜 Log<span id="logDot"></span></button></div>
+    <div class="clock"><div><div class="type"><button id="helpBtn" style="padding:2px 8px;margin-right:6px" title="How to play">?</button><span id="where">Pocket Survival</span></div><div class="hint" id="scenName"></div></div><div class="t" id="clock">--</div></div>
+    <div class="bars" id="bars"></div>
+    <div class="box tab-here" id="locbox"><h3>Waiting to start…</h3><div class="hint">Load your town to begin.</div></div>
+    <div class="box hidden tab-here" id="actbox"><h3>What do you do here?</h3>
+      <div class="row"><input id="act" maxlength="160" placeholder="e.g. block the doors with the shelves"><button id="aDo" class="primary shrink">Do it</button></div>
+      <div class="chips" id="sugg" style="margin-top:8px"></div><div class="hint" id="actHint" style="margin-top:6px"></div></div>
+    <div class="box tab-bag"><h3>Inventory <small class="hint" id="cap"></small></h3><div class="inv" id="inv"></div></div>
+    <div class="box tab-log"><h3>Log</h3><div id="log"></div></div>
+  </div>
+  <div id="mapwrap"><div id="map"></div><div id="hud" class="hidden"></div><div id="banner" class="hidden"></div></div>
+</div>
+
+<div id="setup" class="overlay">
+  <div class="card">
+    <h1>POCKET SURVIVAL</h1>
+    <div class="sub">Your town. Your pockets. One bad day. <a href="#" id="helpLink" style="color:var(--accent)">How to play</a></div>
+    <label>Where? (zip code or town)</label>
+    <div class="row">
+      <input id="q" placeholder="e.g. 62704 or Springfield, IL">
+      <select id="cc" class="shrink">
+        <option value="us">US</option><option value="ca">Canada</option><option value="gb">UK</option><option value="au">Australia</option><option value="de">Germany</option><option value="">Anywhere</option>
+      </select>
+    </div>
+    <button id="geo" style="width:100%;margin-top:8px">📍 Use my current location</button>
+    <div class="hint" style="margin-top:4px">Your location is only used to load your map. It isn't saved anywhere else.</div>
+    <label>Area size</label>
+    <select id="rad"><option value="2000">Small (2 km around)</option><option value="3000" selected>Town (3 km around)</option><option value="4500">Big (4.5 km around)</option></select>
+    <label>What are you surviving?</label>
+    <div class="chips" id="scens"></div>
+    <label>What's in your pockets? <span id="pcount"></span></label>
+    <div class="chips" id="pockets"></div>
+    <div class="row" style="margin-top:8px"><input id="custom" placeholder="Add your own (e.g. 'pepper spray')"><button id="addc" class="shrink">Add</button></div>
+    <label>AI narrator</label>
+    <select id="aimode">
+      <option value="free" selected>Free online AI (no setup)</option>
+      <option value="ollama">My Ollama PC</option>
+      <option value="off">Off</option>
+    </select>
+    <div id="ollamaOpts" class="hidden">
+      <div class="hint" style="margin-top:6px">Ollama needs OLLAMA_ORIGINS=* set.</div>
+      <div class="row" style="margin-top:6px"><input id="aiurl" value="http://localhost:11434"><input id="aimodel" value="qwen3:30b"></div>
+    </div>
+    <div class="hint" style="margin-top:4px">The narrator adds story text after events. The game works the same without it.</div>
+    <button id="go" class="primary big">Load my town</button>
+    <button id="diag" style="width:100%;margin-top:8px">Check connections</button>
+    <div id="status"></div>
+    <div class="hint" style="margin-top:8px">Map data and tiles © OpenStreetMap contributors. Places search by Photon (Komoot).</div>
+  </div>
+</div>
+
+
+<div id="help" class="overlay hidden">
+  <div class="card">
+    <h2 class="mtitle">How to play</h2>
+    <p><b>The idea:</b> an outbreak hits your real town at 7:00 AM. You have only what's in your pockets. Survive until the evacuation helicopters arrive on <b>Day 3, 7 to 11 AM</b>.</p>
+    <h3>1. Set up</h3>
+    <ul>
+      <li>Type a <b>zip code or town</b>, or tap <b>📍 Use my current location</b>, and pick an area size. With your location, your start point is set to where you really are, and you can tap the map to move it.</li>
+      <li>Choose what you're surviving: <b>Zombies</b> (bites infect you), <b>Toxic Gas</b> (the cloud hurts you every hour you're in it, and masks help), or <b>Something Else</b> (hiding works better than fighting).</li>
+      <li>Pick up to <b>6 pocket items</b>, or type your own. Typed items get a role from their name: "pepper spray" becomes a weapon and distraction, "headlamp" becomes a light, "jerky" becomes food.</li>
+    </ul>
+    <h3>2. Place the scene</h3>
+    <ul>
+      <li>Tap the map where <b>you</b> are when it starts, then Confirm.</li>
+      <li>Tap where the <b>outbreak begins</b>, then Start. It has to be a few blocks away from you.</li>
+    </ul>
+    <h3>3. Survive</h3>
+    <ul>
+      <li><b>Tap a place marker</b> to see its danger and walking time, then hit <b>Go here</b>. Walking takes time and energy.</li>
+      <li>The colored circle is the danger zone. <b>It grows every hour.</b> Without a phone or radio, your view of it only updates every 6 hours.</li>
+      <li><b>Scavenge</b> (1 hour): each kind of place has its own loot. Hardware stores have weapons and tools, pharmacies have meds, police stations have a gun and ammo, gas stations have flares and power banks. Places run dry after a few searches, and searching at night without a light finds less.</li>
+      <li><b>Rest</b> or <b>Sleep</b> to get energy back. Sleeping in a dangerous spot can get you woken up by something.</li>
+      <li>Use food and water from your inventory. When food or water hits 0, you start losing health.</li>
+      <li>You can carry 8 things. A <b>backpack</b> adds 8 more slots.</li>
+    </ul>
+    <h3>Type what you do</h3>
+    <ul>
+      <li>At any location, type an action in <b>What do you do here?</b>, like "block the doors with the shelves," "climb on the roof and look around," "search the back for medicine," or "tape my knife to a broom."</li>
+      <li>The AI game master decides what happens from where you are, what you're carrying and how dangerous it is. If the AI is off or busy, the game handles common actions itself.</li>
+      <li><b>Barricades</b> (up to 3) make it less likely things find you there, and give you an edge if they do. They weaken over time.</li>
+      <li><b>Scouting</b> makes you alert, which lowers your encounter chance for 3 hours.</li>
+      <li>Noisy actions, like a fire, attract trouble.</li>
+    </ul>
+    <h3>On the road</h3>
+    <ul>
+      <li>Every trip tells you what happened on the way: wrecks, abandoned cars, survivors, strange noises, barking dogs. Some give you a choice.</li>
+      <li>Feed a stray dog and it becomes your <b>companion 🐕</b>. It warns you of danger, which lowers your encounter chance.</li>
+    </ul>
+    <h3>4. Encounters</h3>
+    <ul>
+      <li>Choose <b>Fight, Run, Distract or Hide</b>. Your odds are shown on each button. While traveling, you can also <b>find another way around</b>, which costs time. If they spot you, you'll have to deal with them.</li>
+      <li>Or <b>type your own move</b>, like "throw my keys and climb onto the car." Mentioning an item you're carrying improves your odds.</li>
+      <li>Your best weapon is used automatically. A gun is strongest but uses ammo.</li>
+      <li>Running costs energy. Hiding works better at night. Distracting uses up firecrackers and flares.</li>
+    </ul>
+    <h3>5. Evacuation</h3>
+    <ul>
+      <li>With a <b>phone or radio</b>, you'll hear the evac location on Day 1 night. Without one, you won't find out until Day 2 afternoon.</li>
+      <li>Reach the 🚁 marker and press <b>Wait for evac</b>. Miss the window and you're left behind.</li>
+    </ul>
+    <p class="hint">Danger levels: <span class="badge d-low">low</span> <span class="badge d-moderate">moderate</span> <span class="badge d-high">high</span> <span class="badge d-overrun">overrun</span> <span class="badge d-safe">safe</span></p>
+    <p class="hint">This is a test build. Real places come from OpenStreetMap, so small towns may have fewer of them. If loading fails, wait a minute and try again.</p>
+    <button class="primary big" id="helpClose">Got it</button>
+  </div>
+</div>
+<div id="modal" class="overlay hidden"><div class="card" id="mcard"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function hav(a,b){const R=6371000,r=Math.PI/180,dA=(b.lat-a.lat)*r,dO=(b.lon-a.lon)*r;const x=Math.sin(dA/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dO/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
+const lerp=(a,b,f)=>({lat:a.lat+(b.lat-a.lat)*f,lon:a.lon+(b.lon-a.lon)*f});
+const pct=v=>Math.round(v*100)+'%';
+
+/* ---------- SCENARIOS ---------- */
+const SCENS={
+  zombie:{name:'Zombie Outbreak',desc:'The dead walk. A bite means infection.',zone:'Infected zone',color:'#c8342c',r0:250,rate:110,zoneDmg:0,encMul:1,fightMod:0,hideMod:0,bite:true,origIcon:'☣️',
+    enemies:[['a lone shambling infected','an infected in a torn work uniform','a crawler dragging itself toward you'],['two infected','a runner, a fast one','an infected cop, still in vest'],['a pack of infected','a horde spilling around the corner']],
+    intro:o=>`7:00 AM. The first 911 calls come in from ${o}. People are attacking people. Then the attackers get back up. You've got what's in your pockets.`},
+  gas:{name:'Toxic Gas Leak',desc:'A chemical cloud spreads. Breathing hurts.',zone:'Toxic cloud',color:'#9bcf3a',r0:400,rate:95,zoneDmg:11,encMul:.45,fightMod:.05,hideMod:.05,bite:false,origIcon:'☢️',
+    enemies:[['a panicked looter','a man screaming for his car keys'],['two looters with bats','a desperate guy with a knife'],['a gang raiding the block']],
+    intro:o=>`7:00 AM. A tanker ruptures near ${o}. A yellow-green cloud rolls low through the streets. Phones scream with alerts. You've got what's in your pockets.`},
+  alien:{name:'Something Else',desc:'The sky went wrong. Things are taking people.',zone:'The Silence',color:'#7b5cff',r0:200,rate:120,zoneDmg:2,encMul:.9,fightMod:-.15,hideMod:.12,bite:false,origIcon:'🛸',
+    enemies:[['a hovering Seeker drone','a cluster of drifting lights'],['a tall figure that moves wrong','two Seekers sweeping the street'],['a Harvester, huge and silent']],
+    intro:o=>`7:00 AM. Every phone in town plays the same low tone. Above ${o}, the sky folds open. Then the sound stops. All sound. You've got what's in your pockets.`}
+};
+
+/* ---------- ITEMS ---------- */
+const ITEMS={
+  phone:{n:'Phone',e:'📱',comms:1,distract:.5,battery:1},keys:{n:'Keys',e:'🔑',weapon:1},wallet:{n:'Wallet',e:'👛'},
+  lighter:{n:'Lighter',e:'🔥',distract:.7},pocketknife:{n:'Pocket knife',e:'🔪',weapon:2},minilight:{n:'Mini flashlight',e:'🔦',light:1},
+  waterbottle:{n:'Water bottle',e:'💧',water:35,use:1},granola:{n:'Granola bar',e:'🍫',food:15,use:1},painkillers:{n:'Painkillers',e:'💊',heal:10,use:1},
+  gum:{n:'Pack of gum',e:'🍬',food:4,use:1},multitool:{n:'Multitool',e:'🛠️',weapon:2,scav:1},bandana:{n:'Bandana',e:'🧣',mask:.5},
+  earbuds:{n:'Earbuds',e:'🎧'},pen:{n:'Pen',e:'🖊️',weapon:1},lipbalm:{n:'Lip balm',e:'💄'},
+  beans:{n:'Canned beans',e:'🥫',food:30,use:1},chips:{n:'Bag of chips',e:'🍟',food:12,use:1},mre:{n:'MRE',e:'🍱',food:45,use:1},bread:{n:'Loaf of bread',e:'🍞',food:20,use:1},
+  water:{n:'Bottled water',e:'💧',water:35,use:1},sportsdrink:{n:'Sports drink',e:'🧃',water:25,food:5,use:1},energy:{n:'Energy drink',e:'🥤',water:10,energy:25,use:1},
+  bandage:{n:'Bandages',e:'🩹',heal:20,use:1},firstaid:{n:'First aid kit',e:'⛑️',heal:45,use:1},antibiotics:{n:'Antibiotics',e:'💉',heal:10,cure:1,use:1},
+  crowbar:{n:'Crowbar',e:'🔧',weapon:4},bat:{n:'Baseball bat',e:'🏏',weapon:4},machete:{n:'Machete',e:'🗡️',weapon:5},hammer:{n:'Hammer',e:'🔨',weapon:3},
+  kitchenknife:{n:'Kitchen knife',e:'🔪',weapon:3},axe:{n:'Fire axe',e:'🪓',weapon:5},pistol:{n:'Pistol',e:'🔫',weapon:7,gun:1},ammo:{n:'Pistol ammo (6)',e:'📦',ammoBox:6},
+  flashlight:{n:'Flashlight',e:'🔦',light:1},batteries:{n:'Batteries',e:'🔋',recharge:40,use:1},ducttape:{n:'Duct tape',e:'🧷',heal:5,use:1},rope:{n:'Rope',e:'🪢',scav:1},
+  gasmask:{n:'Gas mask',e:'😷',mask:.9},firecrackers:{n:'Firecrackers',e:'🧨',distract:.85,charges:2},flare:{n:'Road flare',e:'🎆',distract:.8,light:1,charges:1},
+  radio:{n:'Hand-crank radio',e:'📻',comms:1},backpack:{n:'Backpack',e:'🎒',capacity:8},powerbank:{n:'Power bank',e:'🔌',recharge:70,use:1}
+};
+const POCKET_CHOICES=['phone','keys','wallet','lighter','pocketknife','minilight','waterbottle','granola','painkillers','gum','multitool','bandana','earbuds','pen','lipbalm'];
+const KW=[[/pepper ?spray|mace|taser|stun/i,{weapon:4,distract:.8,e:'🌶️'}],[/gun|pistol|revolver|glock/i,{weapon:7,gun:1,e:'🔫'}],[/machete|sword|axe|hatchet/i,{weapon:5,e:'🗡️'}],
+  [/crowbar|bat\b|pipe|hammer|wrench/i,{weapon:4,e:'🔧'}],[/knife|blade|dagger|karambit/i,{weapon:3,e:'🔪'}],[/screwdriver|tactical pen|\bpen\b|keys?\b/i,{weapon:1,e:'🖊️'}],
+  [/flashlight|torch|headlamp/i,{light:1,e:'🔦'}],[/lighter|matches|whistle|firecracker/i,{distract:.7,e:'🔥'}],[/radio|walkie/i,{comms:1,e:'📻'}],[/phone/i,{comms:1,distract:.5,battery:1,e:'📱'}],
+  [/mask|bandana|scarf|respirator/i,{mask:.5,e:'🧣'}],[/backpack|\bbag\b/i,{capacity:6,e:'🎒'}],[/water|drink|soda|juice/i,{water:30,use:1,e:'💧'}],
+  [/bar\b|snack|candy|jerky|food|apple|sandwich|chips|cracker/i,{food:20,use:1,e:'🍫'}],[/pill|aspirin|ibuprofen|tylenol|medicine|bandage|band-aid/i,{heal:15,use:1,e:'💊'}]];
+
+/* ---------- PLACES ---------- */
+const CATS={grocery:{e:'🛒',l:'Grocery',dm:.05},pharmacy:{e:'💊',l:'Pharmacy',dm:.05},hardware:{e:'🔨',l:'Hardware store',dm:0},sports:{e:'⚾',l:'Sporting goods',dm:0},
+  gas:{e:'⛽',l:'Gas station',dm:.03},medical:{e:'🏥',l:'Hospital / clinic',dm:.2},police:{e:'🚓',l:'Police station',dm:.15},fire:{e:'🚒',l:'Fire station',dm:.05},
+  school:{e:'🏫',l:'School',dm:.05},food:{e:'🍔',l:'Restaurant',dm:0},church:{e:'⛪',l:'Church',dm:-.05},store:{e:'🏬',l:'Department store',dm:.05},
+  park:{e:'🌳',l:'Park',dm:-.03},home:{e:'🏠',l:'Your starting point',dm:-.05}};
+const LOOT={grocery:['beans','beans','chips','bread','water','water','sportsdrink','energy','painkillers','batteries','lighter'],
+  pharmacy:['bandage','bandage','firstaid','antibiotics','antibiotics','painkillers','water','energy','chips'],
+  hardware:['crowbar','hammer','machete','flashlight','batteries','ducttape','rope','gasmask','axe'],
+  sports:['bat','bat','machete','backpack','mre','water','flashlight','sportsdrink'],
+  gas:['chips','water','energy','lighter','flare','powerbank','firecrackers','sportsdrink'],
+  medical:['firstaid','firstaid','bandage','antibiotics','antibiotics','painkillers','gasmask'],
+  police:['pistol','ammo','ammo','radio','flashlight','firstaid'],fire:['axe','firstaid','gasmask','radio','flare','water'],
+  school:['chips','water','bat','sportsdrink','bandage'],food:['bread','chips','kitchenknife','water','beans','sportsdrink'],
+  church:['bread','water','bandage','beans','flare'],store:['backpack','flashlight','powerbank','bat','chips','water','batteries','firecrackers'],
+  park:['water'],home:['beans','water','kitchenknife','flashlight','bandage','bread']};
+function catOf(t){const s=t.shop||'',a=t.amenity||'';
+  if(/^(supermarket|convenience|grocery|greengrocer)$/.test(s))return'grocery';if(a==='pharmacy'||s==='chemist')return'pharmacy';
+  if(/^(hardware|doityourself)$/.test(s))return'hardware';if(/^(sports|outdoor)$/.test(s))return'sports';if(a==='fuel')return'gas';
+  if(/^(hospital|clinic|doctors)$/.test(a))return'medical';if(a==='police')return'police';if(a==='fire_station')return'fire';if(a==='school')return'school';
+  if(/^(restaurant|fast_food|cafe|bar|pub)$/.test(a))return'food';if(a==='place_of_worship')return'church';if(/^(department_store|variety_store|general)$/.test(s))return'store';
+  if(t.leisure==='park')return'park';return null;}
+const CAPS={food:10,park:8};
+
+/* ---------- STATE ---------- */
+let map,tiles,S=null,TOWN=null,phase='setup',busy=false,uid=0;
+let picks=new Set(['phone','keys','wallet']),customs=[],scenKey='zombie';
+const L_={markers:{},me:null,zone:null,org:null,evac:null,tmpStart:null,tmpOrg:null,tmpCircle:null};
+const AI={mode:'free',url:'',model:'',warned:false,busy:false,last:0,pending:null,timer:null};
+let tmp={start:null,origin:null};
+
+function mkItem(id){const b=ITEMS[id];const it={uid:++uid,id,...b};if(b.charges)it.charges=b.charges;if(b.gun)it.ammo=0;return it;}
+function mkCustom(name){let t={e:'❔'};for(const[re,v]of KW){if(re.test(name)){t={...v};break;}}const it={uid:++uid,id:'custom',n:name,...t};if(t.gun)it.ammo=6;if(t.use){it.use=1;}return it;}
+
+/* ---------- SETUP UI ---------- */
+function drawSetup(){
+  $('#scens').innerHTML=Object.entries(SCENS).map(([k,s])=>`<button class="chip scen ${k===scenKey?'on':''}" data-s="${k}"><b>${s.origIcon} ${s.name}</b><small>${s.desc}</small></button>`).join('');
+  $('#pockets').innerHTML=POCKET_CHOICES.map(id=>`<span class="chip ${picks.has(id)?'on':''}" data-p="${id}">${ITEMS[id].e} ${ITEMS[id].n}</span>`).join('')+
+    customs.map((c,i)=>`<span class="chip on" data-c="${i}">${esc(c)} ✕</span>`).join('');
+  $('#pcount').textContent=`${picks.size+customs.length}/6`;
+  document.documentElement.style.setProperty('--accent',SCENS[scenKey].color);
+}
+$('#scens').onclick=e=>{const b=e.target.closest('[data-s]');if(b){scenKey=b.dataset.s;drawSetup();}};
+$('#pockets').onclick=e=>{const p=e.target.closest('[data-p]'),c=e.target.closest('[data-c]');
+  if(p){const id=p.dataset.p;if(picks.has(id))picks.delete(id);else if(picks.size+customs.length<6)picks.add(id);}
+  if(c)customs.splice(+c.dataset.c,1);drawSetup();};
+$('#addc').onclick=()=>{const v=$('#custom').value.trim();if(v&&picks.size+customs.length<6){customs.push(v.slice(0,30));$('#custom').value='';drawSetup();}};
+$('#custom').onkeydown=e=>{if(e.key==='Enter')$('#addc').click();};
+$('#go').onclick=()=>loadTown();
+$('#geo').onclick=useMyLocation;
+$('#diag').onclick=()=>runDiag();
+$('#aimode').onchange=()=>$('#ollamaOpts').classList.toggle('hidden',$('#aimode').value!=='ollama');
+drawSetup();
+function showHelp(){$('#help').classList.remove('hidden');}
+$('#helpClose').onclick=()=>{$('#help').classList.add('hidden');try{localStorage.setItem('ps_seenHelp','1');}catch(e){}};
+$('#helpLink').onclick=e=>{e.preventDefault();showHelp();};
+$('#helpBtn').onclick=showHelp;
+try{if(!localStorage.getItem('ps_seenHelp'))showHelp();}catch(e){showHelp();}
+
+/* ---------- MAP ---------- */
+const MOB=matchMedia('(max-width:820px)').matches;
+map=L.map('map',{zoomControl:!MOB,tap:true}).setView([39.5,-96],4);
+/* ---------- MOBILE SHEET ---------- */
+const panel=$('#panel');let tab='here';
+function setTab(t){tab=t;panel.dataset.tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));if(t==='log')$('#logDot').innerHTML='';
+  if(panel.classList.contains('min'))setSheet('mid');panel.scrollTop=0;}
+function setSheet(st){panel.classList.remove('min','max');if(st!=='mid')panel.classList.add(st);setTimeout(()=>map.invalidateSize(),300);}
+const sheetState=()=>panel.classList.contains('min')?'min':panel.classList.contains('max')?'max':'mid';
+$('#tabs').onclick=e=>{const b=e.target.closest('[data-t]');if(b)setTab(b.dataset.t);};
+(()=>{let y0=null;const h=$('#handle');const order=['min','mid','max'];
+  h.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;},{passive:true});
+  h.addEventListener('touchend',e=>{if(y0==null)return;const dy=e.changedTouches[0].clientY-y0;y0=null;const i=order.indexOf(sheetState());
+    if(dy<-30)setSheet(order[Math.min(2,i+1)]);else if(dy>30)setSheet(order[Math.max(0,i-1)]);else setSheet(i===1?'max':'mid');});
+  h.addEventListener('click',()=>{if(!('ontouchstart'in window))setSheet(sheetState()==='mid'?'max':'mid');});})();
+function sheetPx(){return MOB?panel.getBoundingClientRect().height:0;}
+function centerOn(lat,lon){if(!MOB){map.panTo([lat,lon]);return;}const pt=map.latLngToContainerPoint([lat,lon]);const target=L.point(map.getSize().x/2,(map.getSize().y-sheetPx())/2+40);map.panBy(pt.subtract(target));}
+function hud(){const h=$('#hud');if(!S||!MOB){h.classList.add('hidden');return;}h.classList.remove('hidden');
+  const mini=(ic,v,c)=>`<div>${ic}<span class="bar"><i style="width:${clamp(v,0,100)}%;background:${c}"></i></span></div>`;
+  h.innerHTML=`<div class="hrow"><span class="ht">${fmtTime(S.t)}${isNight()?' 🌙':''}${S.infected?' · 🦠':''}${S.dog?' · 🐕':''}</span><button id="hMe" title="Center on me">⌖</button><button id="hHelp">?</button></div>
+    <div class="hb">${mini('❤️',S.hp,S.infected?'#9b59b6':'#c8342c')}${mini('🍗',S.food,'#e3a33b')}${mini('💧',S.water,'#4fb3ff')}${mini('⚡',S.energy,'#7fc95a')}</div>`;}
+$('#hud').onclick=e=>{if(e.target.closest('#hMe')&&S)centerOn(S.pos.lat,S.pos.lon);if(e.target.closest('#hHelp'))showHelp();};
+tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,className:'darktiles',attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+map.on('click',e=>onMapClick(e.latlng.lat,e.latlng.lng,null));
+
+function fetchT(u,o={},ms=20000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(u,{...o,signal:c.signal}).finally(()=>clearTimeout(t));}
+let netFails=0,placeErr=[];
+const PHOTON_CATS=[['supermarket','shop:supermarket'],['convenience store','shop:convenience'],['pharmacy','amenity:pharmacy'],['hardware store','shop:hardware'],
+  ['sporting goods','shop:sports'],['gas station','amenity:fuel'],['hospital','amenity:hospital'],['clinic','amenity:clinic'],['police','amenity:police'],
+  ['fire station','amenity:fire_station'],['school','amenity:school'],['restaurant','amenity:restaurant'],['fast food','amenity:fast_food'],
+  ['church','amenity:place_of_worship'],['department store','shop:department_store'],['park','leisure:park']];
+async function photonPlaces(c,R){
+  const dLat=R/111320,dLon=R/(111320*Math.cos(c.lat*Math.PI/180));const bbox=[c.lon-dLon,c.lat-dLat,c.lon+dLon,c.lat+dLat].map(v=>v.toFixed(5)).join(',');
+  $('#status').textContent='Scouting real places… (backup search)';
+  const res=await Promise.all(PHOTON_CATS.map(async([q,tag])=>{
+    try{const r=await fetchT(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lat=${c.lat}&lon=${c.lon}&bbox=${bbox}&osm_tag=${tag}&limit=20`,{},20000);
+      if(!r.ok)return[];const j=await r.json();const[k,v]=tag.split(':');
+      return(j.features||[]).filter(f=>f.properties&&f.properties.name).map(f=>({type:(f.properties.osm_type||'n').toLowerCase(),id:f.properties.osm_id,
+        lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],tags:{[k]:v,name:f.properties.name}}));}
+    catch(e){return[];}}));
+  const els=res.flat();if(!els.length)placeErr.push('photon failed');return els.length?els:null;
+}
+async function geocode(q,cc){
+  const zipOnly=q.replace(/\s+/g,'');
+  if(cc&&/^\d{4,5}$/.test(zipOnly)){
+    try{const r=await fetchT(`https://api.zippopotam.us/${cc}/${zipOnly}`);if(r.ok){const j=await r.json();const p=j.places&&j.places[0];
+      if(p)return{lat:+p.latitude,lon:+p.longitude,name:`${p['place name']}, ${p['state abbreviation']||p.state||''}`.replace(/, $/,'')};}}catch(e){netFails++;}
+  }
+  const zip=/^[0-9A-Za-z\- ]{3,10}$/.test(q)&&/\d/.test(q);
+  let u='https://nominatim.openstreetmap.org/search?format=json&limit=1&'+(zip?'postalcode=':'q=')+encodeURIComponent(q)+(cc?'&countrycodes='+cc:'');
+  try{const r=await fetchT(u);const j=await r.json();if(j[0])return{lat:+j[0].lat,lon:+j[0].lon,name:j[0].display_name.split(',').slice(0,2).join(',')};}catch(e){netFails++;}
+  try{const r=await fetchT('https://photon.komoot.io/api/?limit=1&q='+encodeURIComponent(q+(cc?' '+cc.toUpperCase():'')));const j=await r.json();const f=j.features&&j.features[0];
+    if(f)return{lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],name:[f.properties.name,f.properties.state].filter(Boolean).join(', ')};}catch(e){netFails++;}
+  return null;
+}
+async function overpass(c,R){
+  const q=`[out:json][timeout:30];(
+nwr["shop"~"^(supermarket|convenience|grocery|greengrocer|chemist|hardware|doityourself|sports|outdoor|department_store|variety_store|general)$"](around:${R},${c.lat},${c.lon});
+nwr["amenity"~"^(pharmacy|fuel|hospital|clinic|doctors|police|fire_station|school|restaurant|fast_food|cafe|bar|pub|place_of_worship)$"](around:${R},${c.lat},${c.lon});
+nwr["leisure"="park"]["name"](around:${R},${c.lat},${c.lon}););out center tags;`;
+  for(const ep of['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter']){
+    $('#status').textContent='Scouting real places… ('+ep.split('/')[2]+')';
+    try{const r=await fetchT(ep,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)},25000);
+      if(!r.ok){placeErr.push(ep.split('/')[2]+' '+r.status);continue;}const j=await r.json();if(j.elements&&j.elements.length)return j.elements;placeErr.push(ep.split('/')[2]+' empty');}
+    catch(e){placeErr.push(ep.split('/')[2]+' '+(e.name==='AbortError'?'timeout':'blocked'));}
+  }
+  return null;
+}
+let LAST_GEO=null;
+function useMyLocation(){
+  if(!navigator.geolocation){$('#status').textContent="This browser can't share your location. Type your zip code instead.";return;}
+  if(picks.size+customs.length===0){$('#status').textContent='Put at least one thing in your pockets.';return;}
+  $('#status').textContent='Getting your location… (allow it if your phone asks)';$('#geo').disabled=true;
+  navigator.geolocation.getCurrentPosition(pos=>{$('#geo').disabled=false;loadTown({lat:pos.coords.latitude,lon:pos.coords.longitude});},
+    err=>{$('#geo').disabled=false;$('#status').textContent=err.code===1?"Location permission was blocked. Allow location for this site in your browser settings, or type your zip code instead.":
+      location.protocol!=='https:'&&location.hostname!=='localhost'?"Location only works when the game is opened from an https:// web link. Type your zip code instead.":"Couldn't get a location fix. Try again, or type your zip code.";},
+    {enableHighAccuracy:true,timeout:15000,maximumAge:120000});
+}
+async function reverseName(g){
+  try{const r=await fetchT(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&lat=${g.lat}&lon=${g.lon}`,{},12000);if(r.ok){const j=await r.json();const a=j.address||{};
+    const town=a.city||a.town||a.village||a.suburb||a.hamlet||a.county;if(town)return town+(a.state?', '+a.state:'');}}catch(e){}
+  try{const r=await fetchT(`https://photon.komoot.io/reverse?lat=${g.lat}&lon=${g.lon}`,{},12000);if(r.ok){const j=await r.json();const p=j.features&&j.features[0]&&j.features[0].properties;
+    if(p)return(p.city||p.town||p.village||p.name||'Your area')+(p.state?', '+p.state:'');}}catch(e){}
+  return'Your area';
+}
+async function loadTown(geo){
+  geo=geo&&geo.lat!=null?geo:null;LAST_GEO=geo;
+  const q=$('#q').value.trim(),cc=$('#cc').value,R=+$('#rad').value;
+  if(!q&&!geo){$('#status').textContent='Enter a zip code or town first.';return;}
+  if(picks.size+customs.length===0){$('#status').textContent='Put at least one thing in your pockets.';return;}
+  AI.mode=$('#aimode').value;AI.url=$('#aiurl').value.trim();AI.model=$('#aimodel').value.trim();AI.warned=false;
+  netFails=0;$('#go').disabled=true;const key=geo?`ps_town2_geo_${geo.lat.toFixed(3)}_${geo.lon.toFixed(3)}_${R}`:'ps_town2_'+q.toLowerCase()+'_'+cc+'_'+R;
+  try{
+    let cached=null;try{cached=JSON.parse(localStorage.getItem(key));}catch(e){}
+    if(cached&&cached.places&&cached.places.length>=10){TOWN=cached;if(geo)TOWN.geo=geo;}
+    else{
+      $('#status').textContent=geo?'Finding where you are…':'Finding '+q+'…';const c=geo?{...geo,name:await reverseName(geo)}:await geocode(q,cc);
+      if(!c)throw new Error(netFails>=2?"Couldn't reach the internet from here. If you opened this inside the Claude app or a file preview, open it in Chrome or Safari instead (best: from a web link).":"Couldn't find that place. Try the town name, like \"Springfield, IL\".");
+      $('#status').textContent='Scouting real places around '+c.name+'…';
+      placeErr=[];let places=await gatherPlaces(c,R),usedR=R;
+      if(places.length<10){usedR=Math.round(R*1.8);$('#status').textContent='Small town. Widening the search…';const more=await gatherPlaces(c,usedR);if(more.length>places.length)places=more;}
+      if(places.length<5){$('#status').innerHTML='Only found '+places.length+' places'+(placeErr.length?' ('+esc(placeErr.join(', '))+')':'')+'. <button id="fake">Play with made-up places</button> <button id="retry">Try again</button> <button id="diag2">Check connections</button>';
+        $('#go').disabled=false;$('#retry').onclick=()=>loadTown(LAST_GEO);$('#diag2').onclick=runDiag;
+        $('#fake').onclick=()=>{TOWN={center:{lat:c.lat,lon:c.lon},name:c.name+' (made-up places)',R,places:fakePlaces(c,R)};if(geo)TOWN.geo=geo;$('#setup').classList.add('hidden');$('#status').textContent='';beginPlacement();};
+        return;}
+      TOWN={center:{lat:c.lat,lon:c.lon},name:c.name,R:usedR,places};if(geo)TOWN.geo=geo;
+      try{localStorage.setItem(key,JSON.stringify(TOWN));}catch(e){}
+    }
+    $('#setup').classList.add('hidden');$('#status').textContent='';beginPlacement();
+  }catch(e){$('#status').textContent=e.message;}
+  $('#go').disabled=false;
+}
+
+function fakePlaces(c,R){
+  const N={grocery:['Corner Market','Fresh Foods','Quick Stop','Dollar Grocer'],pharmacy:['Main St Pharmacy','Care Drug'],hardware:['Ace of Tools','Lumber & Hardware'],
+    sports:['Big Game Outfitters'],gas:['Fuel Mart','Gas-N-Go','Quick Fuel'],medical:['County Hospital','Urgent Care'],police:['Police Station'],fire:['Fire Station 2'],
+    school:['Lincoln Elementary','Central High'],food:['Rosie\'s Diner','Burger Shack','Pizza Palace'],church:['First Baptist','St. Mary\'s'],store:['Value Mart'],park:['Memorial Park','Riverside Park']};
+  const out=[];let i=0;
+  for(const[cat,names]of Object.entries(N))for(const n of names){const a=Math.random()*Math.PI*2,d=Math.sqrt(Math.random())*R*.9;
+    out.push({id:'f'+(i++),name:n,cat,lat:c.lat+(d*Math.cos(a))/111320,lon:c.lon+(d*Math.sin(a))/(111320*Math.cos(c.lat*Math.PI/180))});}
+  return out;
+}
+
+
+function toPlaces(els,c){
+  const byCat={};
+  for(const el of els){const t=el.tags||{};const nm=t.name||t.brand;if(!nm)continue;const cat=catOf(t);if(!cat)continue;
+    const lat=el.lat??(el.center&&el.center.lat),lon=el.lon??(el.center&&el.center.lon);if(lat==null)continue;
+    (byCat[cat]=byCat[cat]||[]).push({id:String(el.type)[0]+el.id,name:nm,cat,lat:+lat,lon:+lon,d:hav(c,{lat:+lat,lon:+lon})});}
+  const places=[];
+  for(const[cat,arr]of Object.entries(byCat)){arr.sort((a,b)=>a.d-b.d);let n=0;
+    for(const p of arr){if(places.some(q=>q.cat===cat&&(q.id===p.id||(q.name===p.name&&hav(q,p)<150))))continue;places.push(p);if(++n>=(CAPS[cat]||12))break;}}
+  return places;
+}
+const NOMI_Q=['supermarket','convenience store','pharmacy','hardware store','gas station','hospital','police','fire station','school','restaurant','fast food','church','park','dollar store'];
+async function nominatimPlaces(c,R){
+  const dLat=R/111320,dLon=R/(111320*Math.cos(c.lat*Math.PI/180));const vb=[c.lon-dLon,c.lat+dLat,c.lon+dLon,c.lat-dLat].map(v=>v.toFixed(5)).join(',');
+  const out=[];let fails=0;
+  for(let i=0;i<NOMI_Q.length;i++){
+    $('#status').textContent=`Scouting real places… (search ${i+1}/${NOMI_Q.length})`;
+    try{const r=await fetchT(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=30&bounded=1&viewbox=${vb}&q=${encodeURIComponent(NOMI_Q[i])}`,{},15000);
+      if(r.ok){const j=await r.json();for(const p of j)if(p.name)out.push({type:p.osm_type||'n',id:p.osm_id,lat:+p.lat,lon:+p.lon,tags:{[p.category||p.class]:p.type,name:p.name}});}else fails++;}
+    catch(e){fails++;}
+    if(fails>=3){placeErr.push('nominatim blocked');break;}
+    await new Promise(r=>setTimeout(r,1100));
+  }
+  return out;
+}
+async function gatherPlaces(c,R){
+  let els=(await overpass(c,R))||[];let places=toPlaces(els,c);
+  if(places.length<25){const ph=(await photonPlaces(c,R))||[];els=els.concat(ph);places=toPlaces(els,c);}
+  if(places.length<25){const nm=await nominatimPlaces(c,R);els=els.concat(nm);places=toPlaces(els,c);}
+  return places;
+}
+async function runDiag(){
+  const box=$('#status');const tests=[
+    ['Map tiles','https://tile.openstreetmap.org/0/0/0.png'],
+    ['Zip lookup','https://api.zippopotam.us/us/90210'],
+    ['Places A (Overpass)','https://overpass-api.de/api/status'],
+    ['Places B (Photon)','https://photon.komoot.io/api/?q=pharmacy&limit=1'],
+    ['Places C (Nominatim)','https://nominatim.openstreetmap.org/search?format=json&limit=1&q=pharmacy'],
+    ['AI narrator','https://text.pollinations.ai/models']];
+  box.innerHTML='Checking connections…';const rows=[];
+  for(const[n,u]of tests){let res;try{const r=await fetchT(u,{},12000);res=r.ok?'✅ OK':'⚠️ '+r.status;}catch(e){res=e.name==='AbortError'?'⏱️ timed out':'❌ blocked';}rows.push(`${n}: ${res}`);box.innerHTML=rows.join('<br>');}
+  box.innerHTML=rows.join('<br>')+'<br><span class="hint">Screenshot this and send it to Bones.</span>';
+}
+
+/* ---------- PLACEMENT ---------- */
+function clearLayers(){Object.values(L_.markers).forEach(m=>map.removeLayer(m));L_.markers={};
+  ['me','zone','org','evac','tmpStart','tmpOrg','tmpCircle'].forEach(k=>{if(L_[k]){map.removeLayer(L_[k]);L_[k]=null;}});}
+function poiIcon(p,extra=''){return L.divIcon({className:'poi '+extra,html:`<span>${CATS[p.cat].e}</span>`,iconSize:MOB?[34,34]:[26,26]});}
+function addPlaceMarker(p){const m=L.marker([p.lat,p.lon],{icon:poiIcon(p)}).addTo(map);m.on('click',()=>onMapClick(p.lat,p.lon,p));L_.markers[p.id]=m;}
+function beginPlacement(){
+  clearLayers();S=null;tmp={start:null,origin:null};
+  TOWN.places=TOWN.places.filter(p=>p.cat!=='home');TOWN.places.forEach(p=>{delete p.searched;delete p.fort;});
+  TOWN.places.forEach(addPlaceMarker);
+  map.setView([TOWN.center.lat,TOWN.center.lon],14);
+  $('#where').textContent=TOWN.name;$('#scenName').textContent=SCENS[scenKey].name;
+  $('#log').innerHTML='';$('#inv').innerHTML='';$('#bars').innerHTML='';$('#clock').textContent='--';
+  $('#locbox').innerHTML='<h3>Set the scene</h3><div class="hint">Tap the map or a place marker. First where you are, then where it starts.</div>';
+  phase='start';$('#actbox').classList.add('hidden');hud();if(MOB)setSheet('min');
+  if(TOWN.geo){onMapClick(TOWN.geo.lat,TOWN.geo.lon,null);if(tmp.start&&!tmp.start.place)tmp.start.name='Your real location';map.setView([TOWN.geo.lat,TOWN.geo.lon],15);}
+  showBanner();
+}
+function showBanner(){
+  const b=$('#banner');b.classList.remove('hidden');
+  if(phase==='start')b.innerHTML=`<span>📍 Where are you at 7:00 AM?</span><span class="hint">${tmp.start?esc(tmp.start.name)+(TOWN.geo?' (tap to move)':''):'tap anywhere'}</span><button class="primary" id="bOk" ${tmp.start?'':'disabled'}>Confirm</button>`;
+  else if(phase==='origin'){const ok=tmp.origin&&hav(tmp.origin,tmp.start)>=SCENS[scenKey].r0+200;
+    b.innerHTML=`<span>${SCENS[scenKey].origIcon} Where does it start?</span><span class="hint">${tmp.origin?(ok?'near '+esc(tmp.origin.name):'too close to you, pick farther away'):'tap anywhere'}</span><button id="bBack">Back</button><button class="primary" id="bOk" ${ok?'':'disabled'}>Start</button>`;}
+  const ok=$('#bOk');if(ok)ok.onclick=()=>{if(phase==='start'){phase='origin';showBanner();}else startGame();};
+  const bk=$('#bBack');if(bk)bk.onclick=()=>{phase='start';tmp.origin=null;['tmpOrg','tmpCircle'].forEach(k=>{if(L_[k]){map.removeLayer(L_[k]);L_[k]=null;}});showBanner();};
+}
+function nearestPlace(pt,maxD){let best=null,bd=maxD;for(const p of TOWN.places){const d=hav(pt,p);if(d<bd){bd=d;best=p;}}return best;}
+function onMapClick(lat,lon,place){
+  if(phase==='play'){if(place)openPlacePopup(place);return;}
+  if(phase!=='start'&&phase!=='origin')return;
+  const pt={lat,lon};const snap=place||nearestPlace(pt,60);
+  if(phase==='start'){
+    tmp.start=snap?{...snap,place:snap}:{lat,lon,name:'Your starting point',place:null};
+    if(L_.tmpStart)map.removeLayer(L_.tmpStart);
+    L_.tmpStart=L.marker([tmp.start.lat,tmp.start.lon],{icon:L.divIcon({className:'me',html:'<span>🧍</span>',iconSize:[34,34]}),interactive:false}).addTo(map);
+  }else{
+    const near=nearestPlace(pt,5000);tmp.origin={lat,lon,name:snap?snap.name:(near?near.name:'downtown')};
+    const sc=SCENS[scenKey];
+    if(L_.tmpOrg)map.removeLayer(L_.tmpOrg);if(L_.tmpCircle)map.removeLayer(L_.tmpCircle);
+    L_.tmpCircle=L.circle([lat,lon],{radius:sc.r0,color:sc.color,fillOpacity:.2,interactive:false}).addTo(map);
+    L_.tmpOrg=L.marker([lat,lon],{icon:L.divIcon({className:'org',html:`<span>${sc.origIcon}</span>`,iconSize:[32,32]}),interactive:false}).addTo(map);
+  }
+  showBanner();
+}
+
+/* ---------- GAME CORE ---------- */
+const place=id=>TOWN.places.find(p=>p.id===id);
+const radius=t=>S.scen.r0+S.scen.rate*t;
+const inZone=(pt,t)=>hav(pt,S.origin)<radius(t);
+const isNight=()=>{const h=(7+S.t)%24;return h>=20||h<6;};
+const hasTag=k=>S.inv.some(i=>i[k]&&(!i.battery||S.battery>0));
+const hasComms=()=>S.inv.some(i=>i.comms&&(!i.battery||S.battery>0));
+const maskVal=()=>Math.max(0,...S.inv.map(i=>i.mask||0));
+const capacity=()=>8+Math.max(0,...S.inv.map(i=>i.capacity||0));
+const knownR=()=>hasComms()?radius(S.t):radius(Math.floor(S.t/6)*6);
+function atEvacSafe(pt){return S.evacOn&&S.evac&&hav(pt,S.evac)<150;}
+function danger(p,useKnown=true){
+  if(S.evacOn&&S.evac&&p.id===S.evac.id)return'safe';
+  const r=useKnown?knownR():radius(S.t);const d=hav(p,S.origin)-r;
+  return d<0?'overrun':d<400?'high':d<1200?'moderate':'low';
+}
+const DBASE={overrun:.5,high:.28,moderate:.14,low:.06,safe:0};
+function locEnc(p){if(danger(p,false)==='safe')return 0;return clamp((DBASE[danger(p,false)]+CATS[p.cat].dm+(isNight()?.1:0))*S.scen.encMul*(1-.22*(p.fort||0))*alertMul(),.02,.8);}
+const alertMul=()=>(S.alert&&S.t<S.alert?.6:1)*(S.dog?.8:1);
+function fmtTime(t){const tot=7+t,day=Math.floor(tot/24)+1,h=Math.floor(tot%24),m=Math.floor((tot%1)*60/15)*15;const ap=h>=12?'PM':'AM',h12=((h+11)%12)+1;return`Day ${day} · ${h12}:${String(m).padStart(2,'0')} ${ap}`;}
+
+function startGame(){
+  const sc=SCENS[scenKey];
+  ['tmpStart','tmpOrg','tmpCircle'].forEach(k=>{if(L_[k]){map.removeLayer(L_[k]);L_[k]=null;}});
+  $('#banner').classList.add('hidden');
+  let startPlace=tmp.start.place;
+  if(!startPlace){startPlace={id:'home',name:'Your starting point',cat:'home',lat:tmp.start.lat,lon:tmp.start.lon};TOWN.places.push(startPlace);addPlaceMarker(startPlace);}
+  S={scen:sc,t:0,hp:100,food:80,water:80,energy:90,infected:false,battery:100,inv:[],pos:{lat:startPlace.lat,lon:startPlace.lon},at:startPlace.id,
+     origin:{lat:tmp.origin.lat,lon:tmp.origin.lon,name:tmp.origin.name},evac:null,evacOn:false,over:false,visited:new Set([startPlace.id]),logs:[],flags:{}};
+  picks.forEach(id=>S.inv.push(mkItem(id)));customs.forEach(c=>S.inv.push(mkCustom(c)));
+  L_.zone=L.circle([S.origin.lat,S.origin.lon],{radius:sc.r0,color:sc.color,weight:2,fillOpacity:.18,interactive:false}).addTo(map);
+  L_.org=L.marker([S.origin.lat,S.origin.lon],{icon:L.divIcon({className:'org',html:`<span>${sc.origIcon}</span>`,iconSize:[32,32]}),interactive:false}).addTo(map);
+  L_.me=L.marker([S.pos.lat,S.pos.lon],{icon:L.divIcon({className:'me',html:'<span>🧍</span>',iconSize:[34,34]}),interactive:false,zIndexOffset:1000}).addTo(map);
+  phase='play';setTab('here');setSheet(MOB?'min':'mid');setTimeout(()=>centerOn(S.pos.lat,S.pos.lon),350);
+  const intro=sc.intro(S.origin.name);
+  log(intro,'sys');
+  log(`Goal: stay alive. Word of an evacuation should come through. ${hasComms()?'Your phone will pick it up.':'With no phone or radio you’ll hear late, so listen for it.'} Tap places on the map to move. Scavenge for supplies.`,'sys');
+  narrate(`The game begins. ${intro} Player is at ${startPlace.name} carrying: ${S.inv.map(i=>i.n).join(', ')}.`);
+  render();
+}
+
+function advance(h,o={}){
+  const steps=Math.max(1,Math.ceil(h/.25)),dt=h/steps;
+  for(let i=0;i<steps;i++){
+    if(S.over)return;S.t+=dt;const m=o.rest?.7:1;
+    for(const pl of TOWN.places)if(pl.fort&&S.t-pl.fortT>=12){pl.fort--;pl.fortT=S.t;if(pl.id===S.at)log('Something has been pounding on your barricade. It\'s weaker now.','bad');}
+    S.food=Math.max(0,S.food-2.2*dt*m);S.water=Math.max(0,S.water-3.2*dt*m);
+    if(o.rest)S.energy=Math.min(100,S.energy+14*dt);else S.energy=Math.max(0,S.energy-(o.travel?2.5:1.5)*dt);
+    let dmg=0,why=[];
+    if(S.food<=0){dmg+=3*dt;why.push('starvation');}if(S.water<=0){dmg+=5*dt;why.push('dehydration');}
+    if(S.energy<=0){dmg+=2*dt;why.push('exhaustion');}if(S.infected){dmg+=2.5*dt;why.push('the infection');}
+    const pos=o.travel?lerp(o.from,o.to,(i+1)/steps):S.pos;
+    if(S.scen.zoneDmg&&inZone(pos,S.t)&&!atEvacSafe(pos)){const z=S.scen.zoneDmg*dt*(1-maskVal());if(z>0){dmg+=z;why.push(S.scen.zone.toLowerCase());if(!S.flags.zoneWarn){S.flags.zoneWarn=1;log(`You're inside the ${S.scen.zone.toLowerCase()}. It's hurting you every hour you stay.${maskVal()?' Your mask helps.':''}`,'bad');}}}
+    S.hp=Math.max(0,S.hp-dmg);
+    if(o.rest&&S.food>20&&S.water>20&&!S.infected)S.hp=Math.min(100,S.hp+2*dt);
+    if(S.inv.some(i=>i.battery)){const b=S.battery;S.battery=Math.max(0,S.battery-2.4*dt);if(b>0&&S.battery===0)log('Your phone dies.','bad');}
+    if(S.hp<=0){gameOver(false,`You succumbed to ${why[why.length-1]||'your wounds'}.`);return;}
+    checkEvents();
+  }
+}
+function checkEvents(){
+  if(S.over)return;const t=S.t;
+  if(!S.flags.b3&&t>=3&&hasComms()){S.flags.b3=1;log(`📡 Emergency alert: "${S.scen.zone} confirmed near ${S.origin.name}. It's spreading about ${Math.round(S.scen.rate)} meters an hour. Shelter or move away."`,'sys');}
+  if(!S.evacOn&&(t>=18&&hasComms()||t>=30||S.flags.forceEvac)){
+    const pref=['school','park','church','medical','store','fire'];let cands=TOWN.places.filter(p=>pref.includes(p.cat));if(cands.length<1)cands=TOWN.places;
+    S.evac=cands.reduce((a,b)=>hav(b,S.origin)>hav(a,S.origin)?b:a);S.evacOn=true;
+    log(`${t>=30&&!S.flags.heardLate?'You find a spray-painted sign on a wall:':'📡 Broadcast:'} "EVAC at ${S.evac.name}. National Guard holding it. Helicopters Day 3, 7 AM to 11 AM. Don't be late."`,'sys');
+    L_.evac=L.marker([S.evac.lat,S.evac.lon],{icon:L.divIcon({className:'evac',html:'<span>🚁</span>',iconSize:[32,32]}),zIndexOffset:900}).addTo(map).on('click',()=>openPlacePopup(S.evac));
+    L.circle([S.evac.lat,S.evac.lon],{radius:150,color:'#4fb3ff',fillOpacity:.15,interactive:false}).addTo(map);
+    narrate(`An evacuation point is announced at ${S.evac.name}, helicopters leave Day 3 between 7 and 11 AM.`);
+  }
+  if(S.evacOn&&S.at===S.evac.id&&t>=48){gameOver(true,`The rotor wash hits you as the helicopter touches down at ${S.evac.name}. You made it out.`);return;}
+  if(t>=52){gameOver(false,`The last helicopter lifts off${S.evacOn?' from '+S.evac.name:''} without you. The town belongs to the ${S.scen.zone.toLowerCase()} now.`);}
+}
+
+/* ---------- ACTIONS ---------- */
+const FLAVOR={
+  zombie:{day:['Cars sit abandoned with their doors hanging open.','A shopping cart rolls slowly across an empty lot.','Somewhere a car alarm wails, then cuts off.','You pass a house with "HELP" painted on the garage door.','A dog barks two streets over, then goes quiet.'],
+    night:['The streetlights flicker. Half of them are out.','You keep to the shadows. Every shape looks like it\'s moving.','A TV glows in a window. Nobody is watching it.'],
+    zone:['Blood smears the sidewalk. You step around it.','You hear moaning from inside a bus shelter.','A body lies in the road. Its hand twitches.']},
+  gas:{day:['A thin yellow haze hangs at the end of the street.','Birds lie still on a lawn.','Sirens wail far off, then stop.','People left in a hurry. Front doors stand open.'],
+    night:['The haze glows under the streetlights.','Your eyes sting even out here.'],
+    zone:['The air tastes like pennies. You cover your mouth.','Thick fog rolls low over the road. You can barely see.']},
+  alien:{day:['Every clock you pass shows the same wrong time.','A flock of birds hangs frozen in the air. Then it\'s gone.','There\'s no sound at all. Not even wind.'],
+    night:['Lights drift between the clouds in slow circles.','Your shadow points the wrong way.'],
+    zone:['The ground hums under your feet.','A car sits in the road, perfectly sliced in half.']}};
+const flavor=inZ=>{const f=FLAVOR[scenKeyOf()];return pick(inZ?f.zone:isNight()?f.night:f.day);};
+const scenKeyOf=()=>Object.keys(SCENS).find(k=>SCENS[k]===S.scen);
+function lootOne(list){const id=pick(list);const it=mkItem(id);return addItem(it)?`You find ${ITEMS[id].e} ${ITEMS[id].n}.`:`You find ${ITEMS[id].n}, but you have no room.`;}
+const ROUTE_EVENTS=[
+  {w:2,art:'dog',nodog:true,text:()=>'A dog bursts out of a yard, barking like crazy. Every bark echoes down the street.',opts:()=>{const f=S.inv.find(i=>i.food&&i.use);return[
+    {label:f?`🍖 Calm it with your ${f.n}`:'🍖 Calm it with food (you have none)',dis:!f,go:()=>{S.inv=S.inv.filter(i=>i!==f);S.dog=true;
+      return'It wolfs down the food, licks your hand, and falls in beside you. 🐕 You have a companion now. It will warn you when something is close.';}},
+    {label:'👋 Shoo it and hurry on',go:async()=>{if(Math.random()<.5)return'It gives up and trots off. You hurry on.';await encounter('drawn by the barking');return'The barking brought trouble, but you got through.';}},
+    {label:'🫥 Hide until it quiets down (+20 min)',go:()=>{advance(.33);return'You crouch behind a fence until it loses interest.';}}];}},
+  {w:3,art:'car',text:()=>'An abandoned car sits in the road. The driver\'s door is open.',opts:()=>[
+    {label:'🚗 Search it (15 min)',go:()=>{advance(.25);return Math.random()<.7?lootOne(['water','chips','flare','firstaid','energy','batteries','powerbank','sportsdrink']):'Nothing in it but fast food wrappers.';}},
+    {label:'➡️ Keep moving',go:()=>'You leave it behind.'}]},
+  {w:3,art:'wreck',text:()=>'A pileup of wrecked cars blocks the street ahead.',opts:()=>[
+    {label:'🧗 Climb over (energy −10)',go:()=>{S.energy=Math.max(0,S.energy-10);if(Math.random()<.25){S.hp-=8;return'You slice your hand on broken glass. (−8 health)';}return'You scramble over the hoods and drop down the other side.';}},
+    {label:'↩️ Go around (+20 min)',go:()=>{advance(.33);return'You cut through backyards and lose some time.';}}]},
+  {w:2,art:'survivor',text:()=>'A scared survivor waves at you from a porch.',opts:()=>{const f=S.inv.find(i=>i.food&&i.use);return[
+    {label:f?`🍫 Give them your ${f.n}`:'🍫 Give them food (you have none)',dis:!f,go:()=>{S.inv=S.inv.filter(i=>i!==f);
+      if(!S.evacOn&&S.t>=8&&Math.random()<.5){S.flags.forceEvac=1;checkEvents();return'They thank you and whisper about an evacuation point. You now know where to go.';}
+      return'They press something into your hands. '+lootOne(['bandage','water','flashlight','firecrackers','painkillers']);}},
+    {label:'🗣️ Ask what they saw',go:()=>`"It started near ${S.origin.name}," they say. "It's spreading. Don't go that way."`},
+    {label:'🚶 Ignore them',go:()=>'You keep your head down and walk on.'}];}},
+  {w:2,art:'store',text:()=>'You hear something moving inside a dark storefront.',opts:()=>[
+    {label:'🔦 Investigate',go:async()=>{if(Math.random()<.5)return lootOne(LOOT.store);await encounter('inside the storefront');return'You get back out to the street.';}},
+    {label:'🤫 Avoid it',go:()=>{advance(.15);return'You cross the street and give it a wide berth.';}}]},
+  {w:2,gas:true,art:'cloud',text:()=>'A tongue of the toxic cloud drifts across the road ahead.',opts:()=>[
+    {label:'😮‍💨 Hold your breath and run',go:()=>{if(Math.random()<.6)return'You burst through it, lungs screaming, and make it clean.';const d=Math.round(12*(1-maskVal()));S.hp-=d;return`You gasp halfway through. Your throat burns. (−${d} health)`;}},
+    {label:'↩️ Detour (+30 min)',go:()=>{advance(.5);return'You wait it out and loop around.';}}]}
+];
+async function routeEvent(story){
+  const pool=ROUTE_EVENTS.filter(e=>(!e.gas||scenKeyOf()==='gas')&&!(e.nodog&&S.dog));const tot=pool.reduce((a,e)=>a+e.w,0);let r=Math.random()*tot,ev=pool[0];
+  for(const e of pool){if((r-=e.w)<=0){ev=e;break;}}
+  const opts=ev.opts();const txt=ev.text();
+  const i=await modal(`${art(ev.art,isNight())}<h2 class="mtitle">On the way</h2><p>${txt}</p>`,opts.map(o=>({label:o.label,dis:o.dis})));
+  const out=await opts[i].go();story.push(txt+' '+out);if(S.hp<=0)gameOver(false,'Your wounds were too much.');
+}
+async function travelTo(p){
+  if(busy||S.over||p.id===S.at)return;busy=true;map.closePopup();AI.pending=null;
+  const from={...S.pos},d=hav(from,p),speed=S.energy<15?3:4.5,hrs=d/1000/speed;
+  let inz=0;for(let i=1;i<=20;i++)if(inZone(lerp(from,p,i/20),S.t+hrs/2))inz++;
+  const pEnc=clamp((.06+.5*(inz/20)+(isNight()?.1:0)+(d>1500?.05:0))*S.scen.encMul*alertMul(),0,.85);
+  const startT=S.t,story=[flavor(inz>4)];
+  S.energy=Math.max(0,S.energy-7*d/1000);
+  advance(hrs,{travel:true,from,to:p});
+  if(!S.over){
+    if(Math.random()<pEnc){const r=await encounter(`on the way to ${p.name}`,{travel:true});if(r)story.push(r);}
+    else if(Math.random()<.4)await routeEvent(story);
+  }
+  if(S.over){busy=false;render();return;}
+  S.pos={lat:p.lat,lon:p.lon};S.at=p.id;render();centerOn(p.lat,p.lon);const first=!S.visited.has(p.id);S.visited.add(p.id);
+  const dg=danger(p),mins=Math.round((S.t-startT)*60);
+  story.push(`You reach ${p.name} after ${mins} minutes.${first?'':' You\'ve been here before.'}${p.fort?' Your barricade is still standing.':''}`);
+  log(`On the way to ${p.name}: ${story.join(' ')} Danger here: ${dg}.`,dg==='overrun'||dg==='high'?'bad':'');
+  await modal(`<h2 class="mtitle">${CATS[p.cat].e} ${esc(p.name)}</h2><div class="story">${story.map(x=>`<p>${esc(x)}</p>`).join('')}</div><p><span class="badge d-${dg}">${dg}</span> <span class="hint">${fmtTime(S.t)}</span></p>`,[{label:'Continue',cls:'primary'}]);
+  narrate(`Player walked ${(d/1000).toFixed(1)} km to ${p.name}, a ${CATS[p.cat].l}. What happened: ${story.join(' ')} Danger level: ${dg}. It is ${isNight()?'night':'daytime'}.`);
+  checkEvents();busy=false;render();
+}
+async function scavenge(){
+  if(busy||S.over)return;busy=true;const p=place(S.at);advance(1);
+  if(!S.over&&Math.random()<locEnc(p))await encounter(`while searching ${p.name}`);
+  if(S.over){busy=false;render();return;}
+  const s=p.searched||0;let rolls=[3,2,1,0][Math.min(s,3)]+(hasTag('scav')?1:0)-(isNight()&&!hasTag('light')?1:0);
+  if(s>=3)rolls=0;p.searched=s+1;const found=[];
+  for(let i=0;i<rolls;i++)if(Math.random()<.8)found.push(pick(LOOT[p.cat]));
+  const got=[],left=[];for(const id of found){if(addItem(mkItem(id)))got.push(ITEMS[id].e+' '+ITEMS[id].n);else left.push(ITEMS[id].n);}
+  if(got.length)log(`Searched ${p.name}: found ${got.join(', ')}.`,'good');
+  else if(!left.length)log(`Searched ${p.name}: ${s>=2?'picked clean.':isNight()&&!hasTag('light')?'too dark to find anything useful.':'nothing useful.'}`);
+  if(left.length)log(`Found ${left.join(', ')} at ${p.name}, but you have no room. Drop something or find a backpack.`,'bad');
+  narrate(`Player spent an hour searching ${p.name} and found ${got.length?found.map(i=>ITEMS[i].n).join(', '):'nothing'}.`);
+  busy=false;render();
+}
+async function rest(h){
+  if(busy||S.over)return;busy=true;const p=place(S.at);const ch=Math.min(.9,locEnc(p)*(h>=6?1.4:.7));
+  const interrupt=Math.random()<ch;const slept=interrupt?h*rnd(.2,.8):h;
+  advance(slept,{rest:true});
+  if(!S.over&&interrupt)await encounter(`while you ${h>=6?'sleep':'rest'} at ${p.name}`);
+  if(!S.over)log(`${interrupt?'Your rest is cut short':`You ${h>=6?'sleep':'rest'} for ${h} hours`} at ${p.name}.`);
+  busy=false;render();
+}
+function waitEvac(){if(busy||S.over)return;busy=true;const h=Math.max(.25,48-S.t);log(`You hunker down with the Guard at ${S.evac.name} and wait for the helicopters.`);advance(h,{rest:true});busy=false;render();}
+function addItem(it){
+  if(it.ammoBox){const g=S.inv.find(i=>i.gun);if(g){g.ammo=(g.ammo||0)+it.ammoBox;log(`Loaded ${it.ammoBox} rounds into your ${g.n}.`,'good');return true;}}
+  if(it.gun&&!it.ammo){const box=S.inv.find(i=>i.ammoBox);if(box){it.ammo=box.ammoBox;S.inv=S.inv.filter(i=>i!==box);}}
+  if(S.inv.length>=capacity()&&!it.capacity)return false;S.inv.push(it);return true;
+}
+function useItem(u){
+  const it=S.inv.find(i=>i.uid===u);if(!it||S.over)return;const msg=[];
+  if(it.food){S.food=Math.min(100,S.food+it.food);msg.push('food +'+it.food);}
+  if(it.water){S.water=Math.min(100,S.water+it.water);msg.push('water +'+it.water);}
+  if(it.heal){S.hp=Math.min(100,S.hp+it.heal);msg.push('health +'+it.heal);}
+  if(it.energy){S.energy=Math.min(100,S.energy+it.energy);msg.push('energy +'+it.energy);}
+  if(it.cure&&S.infected){S.infected=false;msg.push('infection cured');}
+  if(it.recharge){if(!S.inv.some(i=>i.battery)){log('Nothing to charge.');return;}S.battery=Math.min(100,S.battery+it.recharge);msg.push('phone battery +'+it.recharge);}
+  S.inv=S.inv.filter(i=>i.uid!==u);log(`Used ${it.n}: ${msg.join(', ')||'nothing happened'}.`);render();
+}
+function dropItem(u){const it=S.inv.find(i=>i.uid===u);if(!it)return;if(it.capacity&&S.inv.length-1>8){log('Empty the backpack first (too many items to carry without it).','bad');return;}S.inv=S.inv.filter(i=>i.uid!==u);log(`Dropped ${it.n}.`);render();}
+
+/* ---------- SCENE ART (original inline SVG) ---------- */
+const INK='#08090a';
+function sway(d,amp=3){return `<animateTransform attributeName="transform" type="rotate" values="-${amp} 0 0;${amp} 0 0;-${amp} 0 0" dur="${d}s" repeatCount="indefinite"/>`;}
+function bob(d,dy=4){return `<animateTransform attributeName="transform" type="translate" values="0 0;0 -${dy};0 0" dur="${d}s" repeatCount="indefinite"/>`;}
+function zomb(x,y,s=1,f=false,d=2.4,eyes=true){return `<g transform="translate(${x} ${y}) scale(${f?-s:s} ${s})"><g>${sway(d)}
+  <g fill="${INK}" stroke="${INK}" stroke-linecap="round">
+  <circle cx="7" cy="-62" r="7.5" stroke="none"/>
+  <path d="M-7 -53 Q3 -59 11 -52 L9 -25 L-5 -25 Z" stroke="none"/>
+  <path d="M-1 -51 L-3 -44" stroke-width="3"/>
+  <line x1="7" y1="-48" x2="28" y2="-45" stroke-width="4.5"/><line x1="4" y1="-41" x2="25" y2="-35" stroke-width="4.5"/>
+  <line x1="-3" y1="-26" x2="-9" y2="0" stroke-width="5.5"/><line x1="5" y1="-26" x2="9" y2="-1" stroke-width="5.5"/>
+  </g>${eyes?'<circle cx="10" cy="-63" r="1.4" fill="#d33"/><circle cx="13" cy="-63" r="1.2" fill="#d33"/>':''}</g></g>`;}
+function runner(x,y,s=1){return `<g transform="translate(${x} ${y}) scale(${s})"><g>${bob(.5,3)}<g fill="${INK}" stroke="${INK}" stroke-linecap="round">
+  <circle cx="18" cy="-58" r="7.5" stroke="none"/><path d="M-6 -46 Q8 -58 20 -50 L10 -26 L-6 -28 Z" stroke="none"/>
+  <line x1="14" y1="-46" x2="34" y2="-36" stroke-width="4.5"/><line x1="2" y1="-44" x2="-14" y2="-30" stroke-width="4.5"/>
+  <line x1="-2" y1="-28" x2="-20" y2="-6" stroke-width="5.5"/><line x1="6" y1="-27" x2="18" y2="0" stroke-width="5.5"/></g>
+  <circle cx="22" cy="-59" r="1.4" fill="#d33"/></g></g>`;}
+function crawler(x,y,s=1){return `<g transform="translate(${x} ${y}) scale(${s})"><g>${sway(3,2)}<g fill="${INK}" stroke="${INK}" stroke-linecap="round">
+  <circle cx="34" cy="-12" r="7" stroke="none"/><path d="M-20 -4 Q4 -16 30 -10 L28 0 L-22 0 Z" stroke="none"/>
+  <line x1="26" y1="-6" x2="48" y2="0" stroke-width="4.5"/><line x1="18" y1="-6" x2="30" y2="2" stroke-width="4.5"/></g>
+  <circle cx="38" cy="-13" r="1.3" fill="#d33"/></g></g>`;}
+function person(x,y,s=1,o={}){return `<g transform="translate(${x} ${y}) scale(${o.f?-s:s} ${s})"><g fill="${INK}" stroke="${INK}" stroke-linecap="round">
+  ${o.hood?'<path d="M-6 -60 Q2 -76 10 -60 L9 -54 L-5 -54 Z" stroke="none"/>':'<circle cx="2" cy="-63" r="7" stroke="none"/>'}
+  <path d="M-8 -54 L12 -54 L9 -25 L-5 -25 Z" stroke="none"/>
+  <line x1="-3" y1="-26" x2="-6" y2="0" stroke-width="5.5"/><line x1="5" y1="-26" x2="8" y2="0" stroke-width="5.5"/>
+  ${o.bat?'<line x1="10" y1="-50" x2="20" y2="-36" stroke-width="4.5"/><line x1="20" y1="-36" x2="30" y2="-72" stroke-width="5"/>':'<line x1="10" y1="-50" x2="16" y2="-28" stroke-width="4.5"/>'}
+  ${o.wave?`<g><animateTransform attributeName="transform" type="rotate" values="0 -6 -50;-35 -6 -50;0 -6 -50" dur=".9s" repeatCount="indefinite"/><line x1="-6" y1="-50" x2="-14" y2="-76" stroke-width="4.5"/></g>`:'<line x1="-6" y1="-50" x2="-11" y2="-28" stroke-width="4.5"/>'}
+  </g></g>`;}
+function car(x,y,s=1,o={}){const c=o.c||'#15181a';return `<g transform="translate(${x} ${y}) scale(${s}) rotate(${o.r||0})">
+  <path d="M-58 -10 L-54 -26 L-30 -28 L-16 -44 L22 -44 L38 -28 L58 -24 L60 -10 Z" fill="${c}" stroke="#000" stroke-width="1.5"/>
+  <path d="M-12 -40 L-24 -28 L-2 -28 L-2 -40 Z M2 -40 L2 -28 L30 -28 L20 -40 Z" fill="${o.lit?'#e8c56a':'#2b3236'}" opacity="${o.lit?.7:1}"/>
+  ${o.door?'<path d="M2 -28 L-6 -6 L-26 -4 L-22 -26 Z" fill="'+c+'" stroke="#000" stroke-width="1.5"/>':''}
+  <circle cx="-34" cy="-8" r="10" fill="#050505"/><circle cx="34" cy="-8" r="10" fill="#050505"/>
+  <circle cx="-34" cy="-8" r="4" fill="#3a3a3a"/><circle cx="34" cy="-8" r="4" fill="#3a3a3a"/>
+  ${o.hazard?'<circle cx="56" cy="-20" r="3" fill="#f0a030"><animate attributeName="opacity" values="1;.1;1" dur="1s" repeatCount="indefinite"/></circle>':''}</g>`;}
+function smoke(x,y){return `<g opacity=".55">${[0,1,2].map(i=>`<circle cx="${x+i*6}" cy="${y}" r="${10+i*4}" fill="#3b3b3b"><animate attributeName="cy" values="${y};${y-40-i*10}" dur="${4+i}s" repeatCount="indefinite"/><animate attributeName="opacity" values=".8;0" dur="${4+i}s" repeatCount="indefinite"/></circle>`).join('')}</g>`;}
+function dog(x,y,s=1){return `<g transform="translate(${x} ${y}) scale(${s})"><g>${bob(.35,2)}<g fill="${INK}" stroke="${INK}" stroke-linecap="round">
+  <path d="M-30 -30 Q-10 -38 18 -32 L24 -40 L38 -42 L46 -34 L40 -28 L26 -26 L20 -18 L-28 -16 Z" stroke="none"/>
+  <path d="M38 -42 L36 -52 L30 -42 Z" stroke="none"/><path d="M40 -28 L48 -24" stroke-width="3"/>
+  <line x1="-24" y1="-18" x2="-28" y2="0" stroke-width="4.5"/><line x1="-14" y1="-18" x2="-10" y2="0" stroke-width="4.5"/>
+  <line x1="10" y1="-20" x2="6" y2="0" stroke-width="4.5"/><line x1="18" y1="-20" x2="22" y2="0" stroke-width="4.5"/>
+  <path d="M-30 -30 Q-44 -40 -40 -54" fill="none" stroke-width="4"/></g>
+  <g stroke="#e9e4d8" stroke-width="2.5" stroke-linecap="round" fill="none"><animate attributeName="opacity" values="1;0;1" dur=".7s" repeatCount="indefinite"/>
+  <path d="M54 -40 L64 -46"/><path d="M56 -32 L68 -32"/><path d="M54 -24 L64 -18"/></g></g></g>`;}
+function house(x,y){return `<g transform="translate(${x} ${y})"><path d="M0 0 V-56 L45 -86 L90 -56 V0 Z" fill="#121516"/>
+  <rect x="58" y="-46" width="18" height="16" fill="#e8c56a" opacity=".55"><animate attributeName="opacity" values=".55;.25;.6;.55" dur="3s" repeatCount="indefinite"/></rect>
+  <rect x="14" y="-40" width="20" height="40" fill="#070808"/><rect x="-6" y="-10" width="102" height="10" fill="#1d2122"/>
+  <line x1="-4" y1="-10" x2="-4" y2="-58" stroke="#1d2122" stroke-width="4"/><line x1="94" y1="-10" x2="94" y2="-58" stroke="#1d2122" stroke-width="4"/></g>`;}
+function store(x,y){return `<g transform="translate(${x} ${y})"><rect x="0" y="-92" width="150" height="92" fill="#141718"/><rect x="0" y="-92" width="150" height="16" fill="#1f2426"/>
+  <rect x="12" y="-66" width="70" height="56" fill="#030404"/><rect x="96" y="-66" width="40" height="66" fill="#050606"/>
+  <path d="M12 -66 L50 -40 L30 -10 M82 -66 L60 -30" stroke="#2c3438" stroke-width="1.2" fill="none"/>
+  <g fill="#e2c35a"><animate attributeName="opacity" values="0;0;1;1;0;0" dur="4s" repeatCount="indefinite"/><circle cx="40" cy="-38" r="1.8"/><circle cx="46" cy="-38" r="1.8"/></g></g>`;}
+function fog(c){return `<g opacity=".75">${[[20,120,60],[110,110,70],[200,124,66],[280,112,58]].map(([x,y,r],i)=>`<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r*.45}" fill="${c}" opacity=".5"><animate attributeName="cx" values="${x};${x+30};${x}" dur="${7+i}s" repeatCount="indefinite"/></ellipse>`).join('')}</g>`;}
+function drone(x,y,s=1){return `<g transform="translate(${x} ${y}) scale(${s})"><g>${bob(2,6)}
+  <path d="M-40 70 L-10 0 L10 0 L40 70 Z" fill="#b9a8ff" opacity=".18"><animate attributeName="opacity" values=".08;.28;.08" dur="2s" repeatCount="indefinite"/></path>
+  <ellipse cx="0" cy="0" rx="34" ry="9" fill="${INK}"/><ellipse cx="0" cy="-6" rx="14" ry="8" fill="${INK}"/>
+  <circle cx="0" cy="2" r="4" fill="#cbbcff"><animate attributeName="r" values="3;5;3" dur="1.2s" repeatCount="indefinite"/></circle>
+  <circle cx="-22" cy="2" r="2" fill="#7b5cff"/><circle cx="22" cy="2" r="2" fill="#7b5cff"/></g></g>`;}
+function orbs(){return [[70,50],[130,34],[190,58],[240,40],[160,76]].map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="7" fill="#d8ccff"><animate attributeName="cy" values="${y};${y-10};${y}" dur="${2+i*.4}s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;.3;1" dur="${1.5+i*.3}s" repeatCount="indefinite"/></circle><circle cx="${x}" cy="${y}" r="16" fill="#7b5cff" opacity=".2"/>`).join('');}
+function tall(x,y){return `<g transform="translate(${x} ${y})"><g>${sway(5,1.5)}<g fill="${INK}" stroke="${INK}" stroke-linecap="round">
+  <ellipse cx="0" cy="-122" rx="6" ry="9" stroke="none"/><path d="M-6 -112 L6 -112 L4 -60 L-4 -60 Z" stroke="none"/>
+  <path d="M-5 -108 Q-20 -80 -16 -36" fill="none" stroke-width="3"/><path d="M5 -108 Q22 -84 14 -30" fill="none" stroke-width="3"/>
+  <line x1="-3" y1="-60" x2="-7" y2="0" stroke-width="3.5"/><line x1="3" y1="-60" x2="6" y2="0" stroke-width="3.5"/></g>
+  <circle cx="0" cy="-122" r="2" fill="#cbbcff"/></g></g>`;}
+function tripod(x,y){return `<g transform="translate(${x} ${y})"><g>${bob(3,3)}<g stroke="${INK}" stroke-width="5" stroke-linecap="round" fill="none">
+  <path d="M0 -110 L-70 0"/><path d="M0 -110 L70 0"/><path d="M0 -110 L10 0"/></g>
+  <ellipse cx="0" cy="-116" rx="46" ry="16" fill="${INK}"/>
+  <path d="M-10 -104 L-60 20 L40 20 Z" fill="#b9a8ff" opacity=".14"><animate attributeName="opacity" values=".05;.22;.05" dur="2.5s" repeatCount="indefinite"/></path>
+  <circle cx="0" cy="-110" r="6" fill="#e0d6ff"/></g></g>`;}
+
+function scene(inner,o={}){
+  const n=o.night,sky=n?['#04060c','#151b2b']:['#262b2e','#57554b'];
+  return `<svg class="art" viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${o.label||'scene'}">
+  <defs><linearGradient id="skg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient>
+  <radialGradient id="vg" cx=".5" cy=".55" r=".8"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".8"/></radialGradient></defs>
+  <rect width="320" height="170" fill="url(#skg)"/>
+  ${n?'<circle cx="266" cy="32" r="13" fill="#dcd6c2" opacity=".85"/><circle cx="261" cy="29" r="13" fill="#04060c" opacity=".35"/>':''}
+  ${o.noCity?'':'<path d="M0 118 V84 h20 v-14 h16 v26 h16 v-34 h24 v34 h12 v-18 h18 v18 h28 v-44 h22 v44 h16 v-24 h14 v24 h22 v-30 h20 v30 h14 v-16 h22 v16 h22 v34 Z" fill="#0f1213"/>'}
+  <rect y="118" width="320" height="52" fill="#18191a"/><path d="M0 146 H320" stroke="#3b3a30" stroke-width="2" stroke-dasharray="16 12"/>
+  ${o.tint?`<rect width="320" height="170" fill="${o.tint}" opacity=".13"/>`:''}
+  ${inner}
+  <rect width="320" height="170" fill="url(#vg)"/></svg>`;}
+
+function art(key,night){
+  const N={night};const red={...N,tint:'#c8342c'},grn={...N,tint:'#9bcf3a'},pur={...N,tint:'#7b5cff'};
+  switch(key){
+    case'zombie1':return scene(zomb(150,150,1.15),red);
+    case'zombie2':return scene(zomb(120,152,1.05,false,2.1)+zomb(190,148,1,true,2.7),red);
+    case'runner':return scene(runner(160,152,1.2),red);
+    case'horde':return scene([[40,140,.75,2.2],[85,146,.85,2.8],[130,152,1,2.4],[175,147,.9,2.0],[220,150,1,2.6],[262,142,.8,3]].map(([x,y,s,d],i)=>zomb(x,y,s,false,d)).join(''),red);
+    case'crawler':return scene(crawler(130,154,1.3),red);
+    case'looter':return scene(person(160,152,1.1,{hood:true,bat:true}),N);
+    case'gang':return scene(person(110,150,1,{hood:true,bat:true})+person(160,154,1.1,{hood:true,f:true})+person(212,150,1,{bat:true}),N);
+    case'drone':return scene(drone(160,60,1.1),pur);
+    case'lights':return scene(orbs(),pur);
+    case'figure':return scene(tall(165,154),{...pur,noCity:false});
+    case'harvester':return scene(tripod(160,156),pur);
+    case'car':return scene(car(160,150,1.3,{door:true,hazard:true}),N);
+    case'wreck':return scene(smoke(120,96)+car(90,152,1,{r:-8,c:'#1a1d1f'})+car(200,148,1.05,{r:12,c:'#121416'})+car(150,124,.9,{r:-20,c:'#1c1f22'}),N);
+    case'survivor':return scene(house(130,140)+person(176,132,.8,{wave:true}),N);
+    case'store':return scene(store(85,140),N);
+    case'cloud':return scene(fog('#b6d64a')+person(60,150,.8),grn);
+    case'dog':return scene(dog(150,152,1.3),N);
+    default:return scene('',N);
+  }
+}
+function artForFoe(f){
+  if(/pack|horde/i.test(f))return'horde';if(/crawler/i.test(f))return'crawler';if(/runner/i.test(f))return'runner';if(/two infected/i.test(f))return'zombie2';
+  if(/infected/i.test(f))return'zombie1';if(/gang|two looters/i.test(f))return'gang';if(/looter|man|guy/i.test(f))return'looter';
+  if(/Harvester/i.test(f))return'harvester';if(/figure/i.test(f))return'figure';if(/lights/i.test(f))return'lights';if(/Seeker|drone/i.test(f))return'drone';
+  return'zombie1';}
+
+/* ---------- ENCOUNTERS ---------- */
+function modal(html,buttons){return new Promise(res=>{const c=$('#mcard');
+  c.innerHTML=html+'<div class="btns">'+buttons.map((b,i)=>`<button data-i="${i}" class="${b.cls||''}" ${b.dis?'disabled':''}>${b.label}${b.chance!=null?`<small>${pct(b.chance)}</small>`:''}</button>`).join('')+'</div>';
+  $('#modal').classList.remove('hidden');c.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{$('#modal').classList.add('hidden');res(+b.dataset.i);});});}
+function bestWeapon(){let best=null;for(const i of S.inv){if(!i.weapon)continue;if(i.gun&&!(i.ammo>0))continue;if(!best||i.weapon>best.weapon)best=i;}return best;}
+async function encounter(where,o={}){
+  const sev=o.sev??(Math.random()<.55?0:Math.random()<.7?1:2);const foe=o.foe||pick(S.scen.enemies[sev]);
+  const p=place(S.at),fortHere=!o.travel&&p&&p.fort;
+  const w=bestWeapon(),pw=w?w.weapon:.5,night=isNight();
+  const fightC=clamp(.25+.085*pw+S.scen.fightMod-.12*sev+(fortHere?.1:0),.05,.95);
+  const runC=clamp(.45+S.energy/300-(S.hp<30?.1:0)-.05*sev,.1,.92);
+  const hideC=clamp(.35+S.scen.hideMod+(night?.15:0)-.08*sev+(fortHere?.1:0),.1,.85);
+  const aroundC=clamp(.6+S.energy/400-.1*sev,.2,.9);
+  const dItem=S.inv.filter(i=>i.distract&&(!i.battery||S.battery>0)).sort((a,b)=>b.distract-a.distract)[0];
+  const opts=[{label:`⚔️ Fight with ${w?w.n:'bare hands'}${w&&w.gun?` (${w.ammo} rounds)`:''}`,chance:fightC,k:'fight'}];
+  if(o.travel&&!o.noDetour)opts.push({label:'↩️ Find another way around (+time)',chance:aroundC,k:'around'});
+  opts.push({label:'🏃 Run',chance:runC,k:'run'});
+  if(dItem)opts.push({label:`${dItem.e} Distract with ${dItem.n}`,chance:dItem.distract,k:'distract'});
+  opts.push({label:'🫥 Hide',chance:hideC,k:'hide'});
+  opts.push({label:'✍️ Do what I typed above',k:'custom'});
+  const i=await modal(`${art(artForFoe(foe),night)}<h2 class="mtitle">${['Trouble','Danger','RUN'][sev]}</h2><p>${fmtTime(S.t)}. ${esc(cap(where))}, you run into <b>${foe}</b>.${fortHere?' Your barricade gives you an edge.':''}</p><p class="hint">Health ${Math.round(S.hp)} · Energy ${Math.round(S.energy)}${night?' · It\'s dark':''}</p>
+    <input id="encTxt" class="encin" maxlength="120" placeholder="Or type your own move, e.g. throw the gum and climb onto the car">`,opts);
+  const typed=(($('#encTxt')||{}).value||'').trim();
+  let op=opts[i];let chance=op.chance,txt='',dmg=0,story='';
+  if(op.k==='custom'){const c=customMove(typed);chance=c.chance;op={k:c.k,label:typed};}
+  const win=Math.random()<chance;
+  if(op.k==='around'){
+    S.energy=Math.max(0,S.energy-8);advance(rnd(.3,.6));
+    if(win){txt=`You back off, cut down a side street, and loop around ${foe}. It costs you time, but you stay clear.`;story=txt;}
+    else{await modal(`<h2 class="mtitle">Spotted</h2><p>You try to slip around, but ${foe} sees you. No more sneaking.</p>`,[{label:'Deal with it',cls:'primary'}]);
+      return await encounter(where,{...o,noDetour:true,sev,foe});}
+  }else if(op.k==='fight'||op.k==='cfight'){if(w&&w.gun&&op.k==='fight')w.ammo--;
+    if(win){dmg=w&&w.gun&&op.k==='fight'?0:Math.round(rnd(0,8));txt=op.k==='cfight'?`It works. You "${esc(op.label)}" and take down ${foe}.`:`You take down ${foe} with your ${w?w.n.toLowerCase():'fists'}.`;}
+    else{dmg=Math.round(rnd(14,28)+sev*5);txt=op.k==='cfight'?`You try to "${esc(op.label)}" but it goes wrong. You get away hurt.`:`The fight goes bad. You get away from ${foe}, but you're hurt.`;if(S.scen.bite&&Math.random()<.3){S.infected=true;txt+=' <b>You were bitten.</b> You need antibiotics.';}}}
+  else if(op.k==='run'){S.energy=Math.max(0,S.energy-10);if(win)txt=`You sprint until your lungs burn. ${cap(foe)} falls behind.`;
+    else{dmg=Math.round(rnd(10,24)+sev*4);txt='You trip and it catches you. You tear free, bleeding.';if(S.scen.bite&&Math.random()<.15){S.infected=true;txt+=' <b>You were bitten.</b> You need antibiotics.';}}}
+  else if(op.k==='distract'||op.k==='cdistract'){const it=op.k==='distract'?dItem:op.item;if(it){if(it.charges){it.charges--;if(it.charges<=0)S.inv=S.inv.filter(x=>x!==it);}if(it.battery)S.battery=Math.max(0,S.battery-10);}
+    if(win)txt=op.k==='cdistract'?`It works. You "${esc(op.label)}" and slip away while it's distracted.`:`You use the ${dItem.n.toLowerCase()} to draw it away and slip past.`;else{dmg=Math.round(rnd(8,20));txt=`It doesn't fall for it. You take a hit getting clear.`;}}
+  else{if(win)txt=op.k==='chide'?`It works. You "${esc(op.label)}" and ${foe} passes you by.`:`You press into the shadows and hold your breath. ${cap(foe)} passes by.`;else{dmg=Math.round(rnd(12,26)+sev*4);txt='It finds you. You fight your way out, barely.';}
+    if(fortHere&&!win){p.fort=Math.max(0,p.fort-1);txt+=' Your barricade takes a beating.';}}
+  S.hp=Math.max(0,S.hp-dmg);
+  log(`${cap(foe)} ${where}. ${txt.replace(/<[^>]+>/g,'')}${dmg?` (−${dmg} health)`:''}`,win?'good':'bad');
+  narrate(`Encounter ${where} with ${foe}. Player chose: ${op.label||op.k}. Result: ${win?'success':'failure'}${dmg?`, lost ${dmg} health`:''}${S.infected?', player is infected':''}.`);
+  await modal(`<h2 class="mtitle">${win?'You made it':'Hurt'}</h2><p>${txt}</p>${dmg?`<p class="hint">−${dmg} health</p>`:''}`,[{label:'Continue',cls:'primary'}]);
+  if(S.hp<=0)gameOver(false,`${cap(foe)} got you.`);
+  render();return (win?'':'')+txt.replace(/<[^>]+>/g,'')+(dmg?` (−${dmg} health)`:'');
+}
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+function findMentioned(t){t=t.toLowerCase();return S.inv.filter(i=>{const w=i.n.toLowerCase().replace(/\(.*\)/,'').trim();return t.includes(w)||w.split(' ').some(x=>x.length>3&&t.includes(x));});}
+function customMove(t){
+  const m=findMentioned(t);let chance=.3,k='chide';
+  const wpn=m.filter(i=>i.weapon).sort((a,b)=>b.weapon-a.weapon)[0],dis=m.find(i=>i.distract);
+  if(/hit|stab|swing|smash|fight|attack|kill|shoot|bash|punch|kick/i.test(t)){k='cfight';chance=.2+(wpn?.09*wpn.weapon:0);}
+  else if(dis||/throw|toss|distract|noise|alarm|honk|bang/i.test(t)){k='cdistract';chance=dis?dis.distract:.45;if(m[0]&&!dis)chance+=.1;}
+  else if(/climb|roof|car|fence|tree|ladder|window|door|lock|duck|crawl|under/i.test(t)){k='chide';chance=.5+(isNight()?.1:0);}
+  if(!t)chance=.15;
+  return{k,chance:clamp(chance+S.scen.hideMod*(k==='chide'?1:0),.05,.85),item:dis||m[0]};
+}
+
+/* ---------- FREE-TEXT ACTIONS AT A LOCATION ---------- */
+const SUGGEST=['Barricade the doors','Look out the windows','Search the back room for meds','Treat my wounds','Hide and stay quiet','Set up a noise trap'];
+const AI_EXTRA=['water','chips','bandage','batteries','ducttape','rope'];
+async function doAction(){
+  const text=$('#act').value.trim();if(!text||busy||S.over)return;busy=true;$('#aDo').disabled=true;
+  const p=place(S.at);AI.pending=null;let res=null,ai=false;
+  if(AI.mode!=='off'){$('#actHint').textContent=AI.mode==='free'?'The game master is thinking… (free AI can take up to ~20s)':'The game master is thinking…';
+    try{res=await aiResolve(text,p);ai=!!res;}catch(e){res=null;}}
+  if(!res)res=localResolve(text,p);
+  $('#actHint').textContent='';
+  await applyResolution(res,text,p,ai);
+  $('#act').value='';$('#aDo').disabled=false;busy=false;render();
+}
+async function aiResolve(text,p){
+  const allowed=[...new Set([...(LOOT[p.cat]||[]),...AI_EXTRA])];
+  const prompt=`You are the fair, gritty game master of a survival game. Scenario: ${S.scen.name}. Real town: ${TOWN.name}.
+Location: ${p.name} (${CATS[p.cat].l}). Searched before: ${p.searched||0} times. Barricade level: ${p.fort||0}/3. Danger here: ${danger(p)}. Time: ${fmtTime(S.t)}${isNight()?' (night)':''}.
+Player: health ${Math.round(S.hp)}, food ${Math.round(S.food)}, water ${Math.round(S.water)}, energy ${Math.round(S.energy)}${S.infected?', infected':''}.
+Inventory: ${S.inv.map(i=>i.n).join(', ')||'nothing'}.
+The player says: "${text.replace(/"/g,"'")}"
+Decide a realistic outcome. The player can only use items they actually have and things that would plausibly be at this location. Impossible or overpowered actions fail. Searching a place many times finds less.
+Reply with ONLY a JSON object, no other text:
+{"narration":"2-4 vivid sentences, second person, present tense","hours":0.25 to 4,"kind":"fortify|search|scout|hide|rest|craft|treat|call|other","hp_change":-25 to 15,"energy_change":-25 to 25,"fortify":0 to 2,"items_used":["exact inventory item names"],"items_found":["ids only from this list: ${allowed.join(', ')}"],"crafted":null or {"name":"short name","weapon":0-4,"distract":0-0.8,"light":false},"noise":0 to 1}`;
+  const raw=await aiText(prompt,true);const m=raw&&raw.match(/\{[\s\S]*\}/);if(!m)return null;
+  let j;try{j=JSON.parse(m[0]);}catch(e){return null;}
+  if(!j||typeof j.narration!=='string')return null;
+  j.items_found=(Array.isArray(j.items_found)?j.items_found:[]).filter(id=>allowed.includes(id)).slice(0,2);
+  if((p.searched||0)>=4)j.items_found=[];
+  return j;
+}
+function localResolve(t,p){
+  const T=t.toLowerCase(),has=re=>S.inv.find(i=>re.test(i.n));
+  if(/barricade|block|board|fortify|wedge|lock|push.*(door|shelf|desk|table)|secure|reinforce/.test(T)){
+    const tool=has(/hammer|duct tape|rope|crowbar/i);
+    return{kind:'fortify',hours:1,energy_change:-10,fortify:tool?2:1,noise:.3,items_used:[],
+      narration:`You drag shelves and anything heavy against the doors${tool?` and use your ${tool.n.toLowerCase()} to lock it all in place`:''}. It won't stop everything, but it'll slow them down.`};}
+  if(/trap|tripwire|alarm|cans|bells/.test(T)){const r=has(/rope|duct tape/i);
+    return{kind:'fortify',hours:.75,energy_change:-5,fortify:1,noise:.1,items_used:[],narration:r?`You string your ${r.n.toLowerCase()} across the entrance hung with cans. Anything coming in will make noise.`:`You stack cans and bottles by the door. Anything coming in will knock them over.`};}
+  if(/look out|scout|watch|window|roof|climb|lookout|peek/.test(T)){
+    const dz=Math.round(hav(p,S.origin)-knownR());
+    return{kind:'scout',hours:.5,energy_change:-3,noise:.05,items_used:[],narration:dz>0?`You watch the streets for a while. The ${S.scen.zone.toLowerCase()} looks to be about ${dz} meters from here, and you spot movement to the ${pick(['north','east','south','west'])}. You'll be more careful for a few hours.`:`From the window you can see it: you're inside the ${S.scen.zone.toLowerCase()}. Shapes move between the houses. You note the quietest way out.`};}
+  if(/search|look for|check|raid|loot|find|scavenge|dig/.test(T)){
+    const want=/med|pill|bandage|first aid|drug|antibi/.test(T)?'heal':/food|eat|snack|can/.test(T)?'food':/water|drink/.test(T)?'water':/weapon|knife|bat|gun|tool/.test(T)?'weapon':null;
+    let pool=LOOT[p.cat]||[];const fit=pool.filter(id=>want&&(ITEMS[id][want]||(want==='heal'&&ITEMS[id].cure)));if(fit.length)pool=fit;
+    const s=p.searched||0,n=Math.max(0,[2,2,1,0][Math.min(s,3)]-(isNight()&&!hasTag('light')?1:0));const found=[];for(let i=0;i<n;i++)if(Math.random()<.75)found.push(pick(pool));
+    return{kind:'search',hours:1,energy_change:-4,noise:.3,items_used:[],items_found:found,narration:found.length?`You go through ${want?'every spot something like that might be':'the place carefully'}.`:`You search, but ${s>=2?'the place has been picked clean':'come up empty'}.`};}
+  if(/treat|bandage|patch|clean.*(wound|cut)|first aid|heal/.test(T)){const h=S.inv.filter(i=>i.heal).sort((a,b)=>b.heal-a.heal)[0];
+    return h?{kind:'treat',hours:.5,energy_change:0,noise:0,items_used:[h.n],narration:`You sit down and treat your wounds with the ${h.n.toLowerCase()}.`}:{kind:'treat',hours:.5,hp_change:2,noise:0,items_used:[],narration:'You have nothing to treat your wounds with, so you rinse them and hope for the best.'};}
+  if(/eat|drink|meal/.test(T)){const f=S.inv.find(i=>(/drink/.test(T)?i.water:i.food)&&i.use)||S.inv.find(i=>(i.food||i.water)&&i.use);
+    return{kind:'rest',hours:.25,noise:0,items_used:f?[f.n]:[],narration:f?`You take a minute and have the ${f.n.toLowerCase()}.`:'You have nothing to eat or drink.'};}
+  if(/hide|lay low|stay quiet|wait|hunker/.test(T))return{kind:'hide',hours:2,noise:0,items_used:[],narration:'You find a corner out of sight and stay perfectly still while time crawls by.'};
+  if(/fire|cook|warm/.test(T)){const l=has(/lighter|flare/i);return l?{kind:'rest',hours:1,hp_change:3,energy_change:10,noise:.6,items_used:[],narration:'You get a small fire going. The warmth helps, but the light and smoke could draw attention.'}:{kind:'other',hours:.25,noise:0,items_used:[],narration:'You have nothing to start a fire with.'};}
+  if(/craft|make|build|tape|tie|spear|club/.test(T)){const k=has(/knife/i),r=has(/duct tape|rope/i);
+    if(k&&r)return{kind:'craft',hours:1,noise:.1,items_used:[k.n,r.n],crafted:{name:'Makeshift spear',weapon:4},narration:`You lash your ${k.n.toLowerCase()} to a broom handle with the ${r.n.toLowerCase()}. Crude, but it keeps them at arm's length.`};
+    return{kind:'craft',hours:.5,noise:0,items_used:[],narration:'You try to put something together, but you don\'t have the right parts. A knife and some tape or rope would do it.'};}
+  if(/call|text|phone|radio|news|signal/.test(T)){if(!hasComms())return{kind:'call',hours:.25,items_used:[],narration:'You have no working phone or radio.'};
+    if(S.t>=10&&!S.evacOn){S.flags.forceEvac=1;return{kind:'call',hours:.5,items_used:[],narration:'You keep trying until a broadcast cuts through the static.'};}
+    return{kind:'call',hours:.5,items_used:[],narration:`Static, then a voice: the ${S.scen.zone.toLowerCase()} is spreading out from ${S.origin.name}. Stay away from it.`};}
+  if(/sleep|rest|nap/.test(T))return{kind:'rest',hours:2,noise:0,items_used:[],narration:'You close your eyes for a while.'};
+  return{kind:'other',hours:.5,noise:.2,items_used:[],narration:`You try to ${T.replace(/^i\s+/,'')}. It takes a while, but nothing much comes of it.${AI.mode==='off'?' (Turn on the AI narrator for smarter results.)':''}`};
+}
+async function applyResolution(r,text,p,ai){
+  const hrs=clamp(+r.hours||.5,.25,4),fx=[];
+  const rest=r.kind==='rest'||r.kind==='hide';
+  advance(hrs,{rest});if(S.over)return;
+  for(const nm of(r.items_used||[]).slice(0,3)){const it=S.inv.find(i=>i.n.toLowerCase()===String(nm).toLowerCase())||S.inv.find(i=>String(nm).toLowerCase().includes(i.n.toLowerCase())||i.n.toLowerCase().includes(String(nm).toLowerCase()));
+    if(!it)continue;S.inv=S.inv.filter(i=>i!==it);
+    if(it.food){S.food=Math.min(100,S.food+it.food);fx.push('food +'+it.food);}if(it.water){S.water=Math.min(100,S.water+it.water);fx.push('water +'+it.water);}
+    if(it.heal){S.hp=Math.min(100,S.hp+it.heal);fx.push('health +'+it.heal);}if(it.cure&&S.infected){S.infected=false;fx.push('infection cured');}
+    if(it.energy){S.energy=Math.min(100,S.energy+it.energy);}fx.push('used '+it.n);}
+  const hp=clamp(Math.round(+r.hp_change||0),-25,15),en=clamp(Math.round(+r.energy_change||0),-25,25);
+  if(hp){S.hp=clamp(S.hp+hp,0,100);fx.push(`health ${hp>0?'+':''}${hp}`);}if(en){S.energy=clamp(S.energy+en,0,100);fx.push(`energy ${en>0?'+':''}${en}`);}
+  const f=clamp(Math.round(+r.fortify||0),0,2);if(f){p.fort=Math.min(3,(p.fort||0)+f);p.fortT=S.t;fx.push(`barricade ${p.fort}/3`);}
+  if(r.kind==='scout'){S.alert=S.t+3;fx.push('alert for 3 hours');}
+  const got=[];for(const id of(r.items_found||[])){if(ITEMS[id]&&addItem(mkItem(id)))got.push(ITEMS[id].e+' '+ITEMS[id].n);}
+  if((r.items_found||[]).length)p.searched=(p.searched||0)+1;
+  if(got.length)fx.push('found '+got.join(', '));
+  if(r.crafted&&r.crafted.name&&(r.items_used||[]).length){const c=r.crafted;const it={uid:++uid,id:'custom',n:String(c.name).slice(0,28),e:'🛠️'};
+    if(+c.weapon)it.weapon=clamp(Math.round(+c.weapon),1,4);if(+c.distract)it.distract=clamp(+c.distract,.1,.8);if(c.light)it.light=1;if(addItem(it))fx.push('made '+it.n);}
+  if(S.hp<=0){gameOver(false,'You pushed yourself too far.');return;}
+  log(`"${text}": ${r.narration}${fx.length?' ('+fx.join(', ')+')':''}`,ai?'ai':'');
+  await modal(`<h2 class="mtitle">${esc(cap(text))}</h2><p>${esc(r.narration)}</p>${fx.length?`<p class="hint">${esc(fx.join(' · '))}</p>`:''}`,[{label:'Continue',cls:'primary'}]);
+  checkEvents();if(S.over)return;
+  const ch=locEnc(p)*(.4+clamp(+r.noise||0,0,1))*Math.min(1,hrs)*(r.kind==='hide'?.5:1);
+  if(Math.random()<ch)await encounter(`at ${p.name}`);
+}
+
+/* ---------- END ---------- *//* ---------- END ---------- */
+async function gameOver(won,why){
+  if(S.over)return;S.over=true;render();
+  log(why,won?'good':'bad');narrate(`The game ends. ${won?'The player survived and was evacuated.':'The player died.'} ${why}`);
+  const i=await modal(`<h2 class="mtitle">${won?'EVACUATED':'YOU DIDN’T MAKE IT'}</h2><p>${why}</p>
+    <p class="hint">Survived ${Math.floor(S.t)} hours · Visited ${S.visited.size} places · Carrying ${S.inv.length} items</p>`,
+    [{label:'🔁 Play again in this town',cls:'primary'},{label:'🗺️ New town / setup'},{label:'👀 Look at the map'}]);
+  if(i===0)beginPlacement();else if(i===1){$('#setup').classList.remove('hidden');}
+}
+
+/* ---------- RENDER ---------- */
+function bar(label,v,col){return`<span>${label}</span><div class="bar"><i style="width:${clamp(v,0,100)}%;background:${col}"></i></div><span>${Math.round(v)}</span>`;}
+function render(){
+  hud();if(!S)return;
+  $('#bagN').textContent=S.inv.length?`(${S.inv.length})`:'';
+  $('#clock').innerHTML=`<span class="${isNight()?'night':''}">${fmtTime(S.t)}${isNight()?' 🌙':''}</span>`;
+  $('#bars').innerHTML=bar('Health',S.hp,S.infected?'#9b59b6':'#c8342c')+bar('Food',S.food,'#e3a33b')+bar('Water',S.water,'#4fb3ff')+bar('Energy',S.energy,'#7fc95a')+
+    (S.inv.some(i=>i.battery)?bar('Phone',S.battery,'#aaa'):'');
+  const p=place(S.at),dg=danger(p);
+  let acts='';
+  if(!S.over){
+    acts+=`<button class="primary" id="aScav">🔍 Scavenge (1h)</button><button id="aRest">😮‍💨 Rest (2h)</button><button id="aSleep">😴 Sleep (6h)</button>`;
+    if(S.evacOn&&S.at===S.evac.id&&S.t<48)acts+=`<button class="primary" id="aWait">🚁 Wait for evac</button>`;
+  }
+  $('#locbox').innerHTML=`<h3>${CATS[p.cat].e} ${esc(p.name)}</h3><div><span class="badge d-${dg}">${dg}</span> <span class="hint">${CATS[p.cat].l}${p.searched?` · searched ${p.searched}×`:''}${p.fort?` · 🚪 barricade ${p.fort}/3`:''}${S.alert&&S.t<S.alert?' · 👀 alert':''}${S.dog?' · 🐕 dog with you':''}${S.infected?' · <b style="color:#c792ea">INFECTED</b>':''}</span></div>
+    <div class="acts">${acts}</div><div class="hint" style="margin-top:8px">${S.over?'Game over.':'Tap a place on the map to travel there, or type what you do below.'}${S.evacOn?` Evac: <b>${esc(S.evac.name)}</b>, Day 3, 7 to 11 AM.`:''}</div>`;
+  const b=(id,f)=>{const e=$(id);if(e)e.onclick=f;};b('#aScav',scavenge);b('#aRest',()=>rest(2));b('#aSleep',()=>rest(6));b('#aWait',waitEvac);
+  $('#actbox').classList.toggle('hidden',S.over);
+  if(!$('#sugg').dataset.on){$('#sugg').dataset.on=1;$('#sugg').innerHTML=SUGGEST.map(x=>`<span class="chip" data-sg="${x}">${x}</span>`).join('');}
+  $('#cap').textContent=`${S.inv.length}/${capacity()}`;
+  $('#inv').innerHTML=S.inv.map(i=>{const tags=[i.weapon?`dmg ${i.weapon}`:'',i.gun?`${i.ammo||0} rds`:'',i.light?'light':'',i.mask?'mask':'',i.comms?'comms':'',i.distract?'distract':'',i.charges?`×${i.charges}`:''].filter(Boolean).join(' · ');
+    return`<div class="it"><span>${i.e}</span><span class="nm">${esc(i.n)} <small>${tags}</small></span>${i.use?`<button data-use="${i.uid}">Use</button>`:''}<button data-drop="${i.uid}">✕</button></div>`;}).join('')||'<div class="hint">Empty pockets.</div>';
+  $('#log').innerHTML=S.logs.slice(0,80).map(l=>`<div class="${l.c}"><div class="ts">${l.ts}</div>${esc(l.txt)}</div>`).join('');
+  if(L_.zone)L_.zone.setRadius(knownR());
+  if(L_.me)L_.me.setLatLng([S.pos.lat,S.pos.lon]);
+  for(const pl of TOWN.places){const m=L_.markers[pl.id];if(m)m.setIcon(poiIcon(pl,(pl.searched?'searched ':'')+(pl.id===S.at?'here':'')));}
+}
+$('#aDo').onclick=doAction;$('#act').addEventListener('focus',()=>{if(MOB&&sheetState()==='min')setSheet('mid');});$('#act').onkeydown=e=>{if(e.key==='Enter')doAction();};
+$('#sugg').onclick=e=>{const c=e.target.closest('[data-sg]');if(c){$('#act').value=c.dataset.sg;$('#act').focus();}};
+$('#inv').onclick=e=>{const u=e.target.closest('[data-use]'),d=e.target.closest('[data-drop]');if(u)useItem(+u.dataset.use);if(d)dropItem(+d.dataset.drop);};
+function log(txt,c=''){if(!S)return;S.logs.unshift({ts:fmtTime(S.t),txt,c});if(MOB&&tab!=='log')$('#logDot').innerHTML='<span class="dot"></span>';render();}
+
+function openPlacePopup(p){
+  if(!S)return;const here=p.id===S.at,d=hav(S.pos,p),speed=S.energy<15?3:4.5,min=Math.round(d/1000/speed*60),dg=danger(p);
+  const html=`<div class="pp"><h4>${CATS[p.cat].e} ${esc(p.name)}</h4><div class="meta">${CATS[p.cat].l}${p.searched?` · searched ${p.searched}×`:''}</div>
+    <span class="badge d-${dg}">${dg}</span> ${here?'':`<span class="hint">${(d/1000).toFixed(2)} km · ~${min} min walk</span>`}
+    ${here?'<div class="hint" style="margin-top:6px">You are here.</div>':S.over?'':`<button class="primary gobtn" data-id="${p.id}">Go here</button>`}</div>`;
+  L.popup({autoPanPaddingTopLeft:[10,MOB?90:10],autoPanPaddingBottomRight:[10,(MOB?sheetPx():0)+10]}).setLatLng([p.lat,p.lon]).setContent(html).openOn(map);
+}
+document.addEventListener('click',e=>{const g=e.target.closest('.gobtn');if(g){const p=place(g.dataset.id);if(p)travelTo(p);}});
+
+/* ---------- AI NARRATOR ---------- */
+AI.q=Promise.resolve();
+function aiText(prompt,json){const run=AI.q.then(()=>aiTextRaw(prompt,json));AI.q=run.catch(()=>{});return run;}
+async function aiTextRaw(prompt,json){
+  if(AI.mode==='ollama'){
+    const r=await fetchT(AI.url.replace(/\/$/,'')+'/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:AI.model,prompt,stream:false,think:false,...(json?{format:'json'}:{}),options:{temperature:.8,num_predict:json?400:180}})},90000);
+    const j=await r.json();return(j.response||'').replace(/<think>[\s\S]*?<\/think>/g,'').trim();
+  }
+  const wait=AI.last+16000-Date.now();if(wait>0)await new Promise(r=>setTimeout(r,wait));AI.last=Date.now();
+  const q=encodeURIComponent(prompt);
+  for(const u of[`https://text.pollinations.ai/${q}?model=openai&private=true${json?'&json=true':''}`,`https://gen.pollinations.ai/text/${q}?model=openai${json?'&json=true':''}`]){
+    try{const r=await fetchT(u,{},30000);if(r.ok){const t=(await r.text()).replace(/<think>[\s\S]*?<\/think>/g,'').trim();if(t&&(json||!/^\s*[{<]/.test(t)))return t;}}catch(e){}
+  }
+  return'';
+}
+function narrate(summary){
+  if(AI.mode==='off'||!S)return;AI.pending=summary;if(AI.busy)return;runNarrator();
+}
+async function runNarrator(){
+  const summary=AI.pending;AI.pending=null;if(!summary||!S)return;AI.busy=true;
+  const prompt=`You narrate a gritty survival game set in a real town (${TOWN.name}). Scenario: ${S.scen.name}. Write 2 or 3 short, vivid sentences in second person, present tense, about this event. Do not invent new items, injuries, or outcomes beyond what is stated. No lists, no headings, no preamble.\nEvent: ${summary}`;
+  try{const txt=await aiText(prompt,false);if(txt){if(!AI.pending)log(txt.slice(0,600),'ai');AI.warned=false;}else throw 0;}
+  catch(e){if(!AI.warned){AI.warned=true;log(AI.mode==='ollama'?'AI unreachable. Check the Ollama address and that OLLAMA_ORIGINS=* is set.':'The free AI is busy or unreachable right now. The game keeps going without it.','sys');}}
+  AI.busy=false;if(AI.pending)runNarrator();
+}
+</script>
+</body>
+</html>
