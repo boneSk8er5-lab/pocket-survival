@@ -1050,7 +1050,7 @@ document.addEventListener('click',e=>{const g=e.target.closest('.gobtn');if(g){c
 
 /* ---------- AI NARRATOR ---------- */
 // Paste your Cloudflare Worker URL here to use the better free AI (Groq). Leave empty to use Pollinations only.
-const RELAY_URL='';
+const RELAY_URL='https://pocket-survival-ai.bonesk8er5.workers.dev/';
 AI.q=Promise.resolve();
 function aiText(prompt,json){const run=AI.q.then(()=>aiTextRaw(prompt,json));AI.q=run.catch(()=>{});return run;}
 async function aiTextRaw(prompt,json){
