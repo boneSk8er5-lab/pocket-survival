@@ -7,7 +7,6 @@
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <title>Pocket Survival</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
 <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0c0d0d;--panel:#151818;--panel2:#1d2121;--line:#2c3232;--bone:#e9e4d8;--dim:#8f958f;--blood:#c8342c;--amber:#e3a33b;--green:#7fc95a;--accent:#c8342c}
@@ -180,7 +179,7 @@ details{margin-top:14px;color:var(--dim)}details input{margin-top:6px}
     <button id="go" class="primary big">Load my town</button>
     <button id="diag" style="width:100%;margin-top:8px">Check connections</button>
     <div id="status"></div>
-    <div class="hint" style="margin-top:8px">Map © OpenFreeMap, OpenMapTiles, OpenStreetMap contributors. Places search by Photon (Komoot).</div>
+    <div class="hint" style="margin-top:8px">Map data and tiles © OpenStreetMap contributors. Places search by Photon (Komoot).</div>
   </div>
 </div>
 
@@ -242,8 +241,6 @@ details{margin-top:14px;color:var(--dim)}details input{margin-top:6px}
 <div id="modal" class="overlay hidden"><div class="card" id="mcard"></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
-<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"></script>
 <script>
 "use strict";
 const $=s=>document.querySelector(s);
@@ -371,20 +368,7 @@ function hud(){const h=$('#hud');if(!S||!MOB){h.classList.add('hidden');return;}
   h.innerHTML=`<div class="hrow"><span class="ht">${fmtTime(S.t)}${isNight()?' 🌙':''}${S.infected?' · 🦠':''}${S.dog?' · 🐕':''}</span><button id="hMe" title="Center on me">⌖</button><button id="hHelp">?</button></div>
     <div class="hb">${mini('❤️',S.hp,S.infected?'#9b59b6':'#c8342c')}${mini('🍗',S.food,'#e3a33b')}${mini('💧',S.water,'#4fb3ff')}${mini('⚡',S.energy,'#7fc95a')}</div>`;}
 $('#hud').onclick=e=>{if(e.target.closest('#hMe')&&S)centerOn(S.pos.lat,S.pos.lon);if(e.target.closest('#hHelp'))showHelp();};
-let usingVector=false;
-function rasterBasemap(){if(tiles){try{map.removeLayer(tiles);}catch(e){}}usingVector=false;
-  tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,className:'darktiles',attribution:'&copy; OpenStreetMap contributors'}).addTo(map);}
-function hasWebGL(){try{const c=document.createElement('canvas');return!!(c.getContext('webgl2')||c.getContext('webgl'));}catch(e){return false;}}
-(function vectorBasemap(){
-  if(!(window.maplibregl&&L.maplibreGL&&hasWebGL())){rasterBasemap();return;}
-  try{
-    tiles=L.maplibreGL({style:'https://tiles.openfreemap.org/styles/dark',attribution:'<a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'}).addTo(map);
-    usingVector=true;const gl=tiles.getMaplibreMap();let loaded=false,errs=0;
-    gl.on('load',()=>{loaded=true;});
-    gl.on('error',()=>{if(++errs>=6&&usingVector&&!loaded)rasterBasemap();});
-    setTimeout(()=>{if(usingVector&&!loaded)rasterBasemap();},12000);
-  }catch(e){rasterBasemap();}
-})();
+tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,className:'darktiles',attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
 map.on('click',e=>onMapClick(e.latlng.lat,e.latlng.lng,null));
 
 function fetchT(u,o={},ms=20000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(u,{...o,signal:c.signal}).finally(()=>clearTimeout(t));}
@@ -418,13 +402,13 @@ async function geocode(q,cc){
   return null;
 }
 async function overpass(c,R){
-  const q=`[out:json][timeout:30];(
+  const q=`[out:json][timeout:12];(
 nwr["shop"~"^(supermarket|convenience|grocery|greengrocer|chemist|hardware|doityourself|sports|outdoor|department_store|variety_store|general)$"](around:${R},${c.lat},${c.lon});
 nwr["amenity"~"^(pharmacy|fuel|hospital|clinic|doctors|police|fire_station|school|restaurant|fast_food|cafe|bar|pub|place_of_worship)$"](around:${R},${c.lat},${c.lon});
 nwr["leisure"="park"]["name"](around:${R},${c.lat},${c.lon}););out center tags;`;
   for(const ep of['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter']){
     $('#status').textContent='Scouting real places… ('+ep.split('/')[2]+')';
-    try{const r=await fetchT(ep,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)},25000);
+    try{const r=await fetchT(ep,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)},12000);
       if(!r.ok){placeErr.push(ep.split('/')[2]+' '+r.status);continue;}const j=await r.json();if(j.elements&&j.elements.length)return j.elements;placeErr.push(ep.split('/')[2]+' empty');}
     catch(e){placeErr.push(ep.split('/')[2]+' '+(e.name==='AbortError'?'timeout':'blocked'));}
   }
@@ -438,7 +422,7 @@ function useMyLocation(){
   navigator.geolocation.getCurrentPosition(pos=>{$('#geo').disabled=false;loadTown({lat:pos.coords.latitude,lon:pos.coords.longitude});},
     err=>{$('#geo').disabled=false;$('#status').textContent=err.code===1?"Location permission was blocked. Allow location for this site in your browser settings, or type your zip code instead.":
       location.protocol!=='https:'&&location.hostname!=='localhost'?"Location only works when the game is opened from an https:// web link. Type your zip code instead.":"Couldn't get a location fix. Try again, or type your zip code.";},
-    {enableHighAccuracy:true,timeout:15000,maximumAge:120000});
+    {enableHighAccuracy:false,timeout:10000,maximumAge:600000});
 }
 async function reverseName(g){
   try{const r=await fetchT(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&lat=${g.lat}&lon=${g.lon}`,{},12000);if(r.ok){const j=await r.json();const a=j.address||{};
@@ -453,24 +437,28 @@ async function loadTown(geo){
   if(!q&&!geo){$('#status').textContent='Enter a zip code or town first.';return;}
   if(picks.size+customs.length===0){$('#status').textContent='Put at least one thing in your pockets.';return;}
   AI.mode=$('#aimode').value;AI.url=$('#aiurl').value.trim();AI.model=$('#aimodel').value.trim();AI.warned=false;
-  netFails=0;$('#go').disabled=true;const key=geo?`ps_town2_geo_${geo.lat.toFixed(3)}_${geo.lon.toFixed(3)}_${R}`:'ps_town2_'+q.toLowerCase()+'_'+cc+'_'+R;
+  let late=null,mine=null;netFails=0;$('#go').disabled=true;const key=geo?`ps_town2_geo_${geo.lat.toFixed(3)}_${geo.lon.toFixed(3)}_${R}`:'ps_town2_'+q.toLowerCase()+'_'+cc+'_'+R;
   try{
     let cached=null;try{cached=JSON.parse(localStorage.getItem(key));}catch(e){}
     if(cached&&cached.places&&cached.places.length>=10){TOWN=cached;if(geo)TOWN.geo=geo;}
     else{
-      $('#status').textContent=geo?'Finding where you are…':'Finding '+q+'…';const c=geo?{...geo,name:await reverseName(geo)}:await geocode(q,cc);
+      $('#status').textContent=geo?'Finding where you are…':'Finding '+q+'…';let namer=null;const c=geo?{...geo,name:'Your area'}:await geocode(q,cc);if(geo)namer=Promise.race([reverseName(geo),new Promise(r=>setTimeout(()=>r('Your area'),5000))]);
       if(!c)throw new Error(netFails>=2?"Couldn't reach the internet from here. If you opened this inside the Claude app or a file preview, open it in Chrome or Safari instead (best: from a web link).":"Couldn't find that place. Try the town name, like \"Springfield, IL\".");
       $('#status').textContent='Scouting real places around '+c.name+'…';
-      placeErr=[];let places=await gatherPlaces(c,R),usedR=R;
-      if(places.length<10){usedR=Math.round(R*1.8);$('#status').textContent='Small town. Widening the search…';const more=await gatherPlaces(c,usedR);if(more.length>places.length)places=more;}
+      placeErr=[];let usedR=R;
+      const onMore=m=>{if(mine&&TOWN===mine)addLatePlaces(m,key);else late=m;};
+      let places=await gatherFast(c,R,onMore);
+      if(places.length<10){usedR=Math.round(R*1.8);$('#status').textContent='Small town. Widening the search…';const more=await gatherFast(c,usedR,onMore);if(more.length>places.length)places=more;}
+      if(namer)c.name=await namer;
       if(places.length<5){$('#status').innerHTML='Only found '+places.length+' places'+(placeErr.length?' ('+esc(placeErr.join(', '))+')':'')+'. <button id="fake">Play with made-up places</button> <button id="retry">Try again</button> <button id="diag2">Check connections</button>';
         $('#go').disabled=false;$('#retry').onclick=()=>loadTown(LAST_GEO);$('#diag2').onclick=runDiag;
         $('#fake').onclick=()=>{TOWN={center:{lat:c.lat,lon:c.lon},name:c.name+' (made-up places)',R,places:fakePlaces(c,R)};if(geo)TOWN.geo=geo;$('#setup').classList.add('hidden');$('#status').textContent='';beginPlacement();};
         return;}
-      TOWN={center:{lat:c.lat,lon:c.lon},name:c.name,R:usedR,places};if(geo)TOWN.geo=geo;
+      TOWN={center:{lat:c.lat,lon:c.lon},name:c.name,R:usedR,places};if(geo)TOWN.geo=geo;mine=TOWN;
       try{localStorage.setItem(key,JSON.stringify(TOWN));}catch(e){}
     }
     $('#setup').classList.add('hidden');$('#status').textContent='';beginPlacement();
+    if(late&&mine===TOWN)addLatePlaces(late,key);
   }catch(e){$('#status').textContent=e.message;}
   $('#go').disabled=false;
 }
@@ -509,6 +497,27 @@ async function nominatimPlaces(c,R){
     await new Promise(r=>setTimeout(r,1100));
   }
   return out;
+}
+// Fast path: Photon (parallel, quick) and Overpass race; start as soon as we have enough,
+// and add Overpass's extra places to the map when they arrive.
+async function gatherFast(c,R,onMore){
+  $('#status').textContent='Finding places near you…';
+  const ovP=overpass(c,R).catch(()=>null),phP=photonPlaces(c,R).catch(()=>null);
+  const first=await Promise.race([ovP.then(e=>({k:'ov',e})),phP.then(e=>({k:'ph',e}))]);
+  let els=first.e||[];let places=toPlaces(els,c);
+  if(places.length>=15){
+    const other=first.k==='ov'?phP:ovP;
+    other.then(e=>{if(e&&e.length)onMore(toPlaces(els.concat(e),c));});
+    return places;
+  }
+  const rest=await(first.k==='ov'?phP:ovP);els=els.concat(rest||[]);places=toPlaces(els,c);
+  if(places.length<12){const nm=await nominatimPlaces(c,R);els=els.concat(nm);places=toPlaces(els,c);}
+  return places;
+}
+function addLatePlaces(list,key){
+  if(!TOWN)return;let added=0;
+  for(const p of list){if(TOWN.places.some(q=>q.id===p.id||(q.cat===p.cat&&q.name===p.name&&hav(q,p)<150)))continue;TOWN.places.push(p);if(phase!=='setup')addPlaceMarker(p);added++;}
+  if(added){try{localStorage.setItem(key,JSON.stringify(TOWN));}catch(e){}if(S)log(`📍 ${added} more place${added>1?"s":""} found nearby.`,'sys');}
 }
 async function gatherPlaces(c,R){
   let els=(await overpass(c,R))||[];let places=toPlaces(els,c);
