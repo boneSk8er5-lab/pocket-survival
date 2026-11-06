@@ -507,7 +507,8 @@ async function runDiag(){
     ['Places A (Overpass)','https://overpass-api.de/api/status'],
     ['Places B (Photon)','https://photon.komoot.io/api/?q=pharmacy&limit=1'],
     ['Places C (Nominatim)','https://nominatim.openstreetmap.org/search?format=json&limit=1&q=pharmacy'],
-    ['AI narrator','https://text.pollinations.ai/models']];
+    ['AI narrator (backup)','https://text.pollinations.ai/models']];
+  if(RELAY_URL)tests.splice(5,0,['AI game master (Groq relay)',RELAY_URL]);
   box.innerHTML='Checking connections…';const rows=[];
   for(const[n,u]of tests){let res;try{const r=await fetchT(u,{},12000);res=r.ok?'✅ OK':'⚠️ '+r.status;}catch(e){res=e.name==='AbortError'?'⏱️ timed out':'❌ blocked';}rows.push(`${n}: ${res}`);box.innerHTML=rows.join('<br>');}
   box.innerHTML=rows.join('<br>')+'<br><span class="hint">Screenshot this and send it to Bones.</span>';
