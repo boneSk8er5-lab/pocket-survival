@@ -916,7 +916,7 @@ const AI_EXTRA=['water','chips','bandage','batteries','ducttape','rope'];
 async function doAction(){
   const text=$('#act').value.trim();if(!text||busy||S.over)return;busy=true;$('#aDo').disabled=true;
   const p=place(S.at);AI.pending=null;let res=null,ai=false;
-  if(AI.mode!=='off'){$('#actHint').textContent=AI.mode==='free'?'The game master is thinking… (free AI can take up to ~20s)':'The game master is thinking…';
+  if(AI.mode!=='off'){$('#actHint').textContent=AI.mode==='free'?(RELAY_URL&&!AI.relayDown?'The game master is thinking…':'The game master is thinking… (free AI can take up to ~20s)'):'The game master is thinking…';
     try{res=await aiResolve(text,p);ai=!!res;}catch(e){res=null;}}
   if(!res)res=localResolve(text,p);
   $('#actHint').textContent='';
@@ -1049,6 +1049,8 @@ function openPlacePopup(p){
 document.addEventListener('click',e=>{const g=e.target.closest('.gobtn');if(g){const p=place(g.dataset.id);if(p)travelTo(p);}});
 
 /* ---------- AI NARRATOR ---------- */
+// Paste your Cloudflare Worker URL here to use the better free AI (Groq). Leave empty to use Pollinations only.
+const RELAY_URL='';
 AI.q=Promise.resolve();
 function aiText(prompt,json){const run=AI.q.then(()=>aiTextRaw(prompt,json));AI.q=run.catch(()=>{});return run;}
 async function aiTextRaw(prompt,json){
@@ -1056,6 +1058,12 @@ async function aiTextRaw(prompt,json){
     const r=await fetchT(AI.url.replace(/\/$/,'')+'/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:AI.model,prompt,stream:false,think:false,...(json?{format:'json'}:{}),options:{temperature:.8,num_predict:json?400:180}})},90000);
     const j=await r.json();return(j.response||'').replace(/<think>[\s\S]*?<\/think>/g,'').trim();
+  }
+  if(RELAY_URL&&!AI.relayDown){
+    try{const r=await fetchT(RELAY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,json:!!json})},25000);
+      if(r.ok){const j=await r.json();const t=(j.text||'').trim();if(t)return t;}
+      else if(r.status===403||r.status===500){AI.relayDown=true;}}
+    catch(e){}
   }
   const wait=AI.last+16000-Date.now();if(wait>0)await new Promise(r=>setTimeout(r,wait));AI.last=Date.now();
   const q=encodeURIComponent(prompt);
