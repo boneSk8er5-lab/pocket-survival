@@ -41,6 +41,7 @@ label{display:block;margin:14px 0 6px;color:var(--dim);font-size:12px;text-trans
   #tabs button.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 22%,var(--panel2))}
   #tabs .dot{position:absolute;top:6px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
   #panel .clock,#panel #bars{display:none}
+  #panel.min .box{visibility:hidden}
   #panel[data-tab="here"] .tab-bag,#panel[data-tab="here"] .tab-log,#panel[data-tab="bag"] .tab-here,#panel[data-tab="bag"] .tab-log,#panel[data-tab="log"] .tab-here,#panel[data-tab="log"] .tab-bag{display:none}
   .box{margin:6px 0}
   .acts button{flex:1 1 30%;padding:12px 8px;font-size:14px}
@@ -118,6 +119,28 @@ details{margin-top:14px;color:var(--dim)}details input{margin-top:6px}
 .btns button small{float:right;color:var(--dim)}
 .mtitle{font-size:22px;margin:0 0 8px;color:var(--accent)}
 .hint{color:var(--dim);font-size:12px}
+.bt{font-family:'Special Elite';font-size:18px}
+#bldg{position:absolute;inset:0;z-index:900;background:radial-gradient(ellipse at center,rgba(20,24,24,.93),rgba(8,9,9,.97));padding:16px;overflow-y:auto;animation:bin .35s ease}
+@keyframes bin{from{opacity:0;transform:scale(1.08)}to{opacity:1;transform:none}}
+.bhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
+.plan{display:grid;gap:0;border:3px solid #4a5050;border-radius:4px;background:#121515;max-width:640px;margin:0 auto}
+.tile{position:relative;min-height:96px;border:2px solid #2f3535;border-radius:0;background:#171b1b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 6px;text-align:center}
+.tile:hover{background:#1e2424}.tile .te{font-size:26px}.tile .tn{font-size:13px;font-weight:600}.tile .ts{font-size:11px;color:var(--dim)}
+.tile.locked{background:repeating-linear-gradient(45deg,#171b1b,#171b1b 8px,#1c1f1f 8px,#1c1f1f 16px)}.tile.locked .ts{color:#e3a33b}
+.tile.done{opacity:.55}.tile.here{background:#23201a;border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.tile .tok{position:absolute;top:6px;right:8px;font-size:20px;animation:tk 1.2s ease-in-out infinite}
+.tile .tdoor{top:auto;bottom:-6px;right:auto;left:50%;transform:translateX(-50%)}
+.tile.door{border-bottom-color:#e3a33b}.dmsg{position:absolute;top:6px;left:6px;font-size:11px;color:#e3a33b;font-weight:700}
+@keyframes tk{50%{transform:translateY(-3px)}}
+.tile .tdoor{animation:none}
+.bentr{max-width:640px;margin:0 auto;text-align:center;border:3px solid #4a5050;border-top:0;padding:6px;font-size:13px;color:var(--dim);background:#0f1111}
+.bacts{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px auto 0;max-width:640px}.bacts button{flex:1 1 30%}
+@media(max-width:820px){#bldg{top:calc(env(safe-area-inset-top) + 74px);bottom:128px;padding:12px}.tile{min-height:84px}.tile .te{font-size:22px}}
+.rooms-h{margin:12px 0 6px;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px}
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
+.room{text-align:left;padding:8px 10px;font-size:13px;display:flex;flex-direction:column;gap:2px}
+.room small{color:var(--dim);font-size:11px}.room.on{border-color:var(--accent)}.room.done{opacity:.5}
+@media(max-width:820px){.room{padding:11px 10px;font-size:14px}}
 #typo button{padding:3px 10px;margin-left:6px;font-size:13px}
 #typo b{color:var(--bone)}
 #sugg .chip{cursor:pointer;font-size:12px;padding:4px 9px}
@@ -144,7 +167,7 @@ details{margin-top:14px;color:var(--dim)}details input{margin-top:6px}
     <div class="box tab-bag"><h3>Inventory <small class="hint" id="cap"></small></h3><div class="inv" id="inv"></div></div>
     <div class="box tab-log"><h3>Log</h3><div id="log"></div></div>
   </div>
-  <div id="mapwrap"><div id="map"></div><div id="hud" class="hidden"></div><div id="banner" class="hidden"></div></div>
+  <div id="mapwrap"><div id="map"></div><div id="bldg" class="hidden"></div><div id="hud" class="hidden"></div><div id="banner" class="hidden"></div></div>
 </div>
 
 <div id="setup" class="overlay">
@@ -218,6 +241,13 @@ details{margin-top:14px;color:var(--dim)}details input{margin-top:6px}
       <li><b>Scouting</b> makes you alert, which lowers your encounter chance for 3 hours.</li>
       <li>Noisy actions, like a fire, attract trouble.</li>
     </ul>
+    <h3>Inside buildings</h3>
+    <ul>
+      <li>When you arrive, the map zooms in to a <b>floor plan</b>. Every place has rooms that fit what it is: a store has a sales floor, aisles, clothing, restrooms and a stockroom, and a restaurant has seating, a kitchen and a walk-in cooler.</li>
+      <li>Tap a room to go in and search it (30 min). Each room has its own loot and its own danger. ⚠️ means you hear something inside.</li>
+      <li>Some doors are <b>🔒 locked</b>. Use a 🗝️ master key ring (found in offices), pick the lock with a lock pick set or multitool, break it down with a crowbar or axe, or kick it in. Breaking and kicking are loud.</li>
+      <li>Tap <b>🗺️ Map</b> to go back out. Tap any empty spot on the map to go search a house there.</li>
+    </ul>
     <h3>On the road</h3>
     <ul>
       <li>Every trip tells you what happened on the way: wrecks, abandoned cars, survivors, strange noises, barking dogs. Some give you a choice.</li>
@@ -281,6 +311,7 @@ const ITEMS={
   kitchenknife:{n:'Kitchen knife',e:'🔪',weapon:3},axe:{n:'Fire axe',e:'🪓',weapon:5},pistol:{n:'Pistol',e:'🔫',weapon:7,gun:1},ammo:{n:'Pistol ammo (6)',e:'📦',ammoBox:6},
   flashlight:{n:'Flashlight',e:'🔦',light:1},batteries:{n:'Batteries',e:'🔋',recharge:40,use:1},ducttape:{n:'Duct tape',e:'🧷',heal:5,use:1},rope:{n:'Rope',e:'🪢',scav:1},
   gasmask:{n:'Gas mask',e:'😷',mask:.9},firecrackers:{n:'Firecrackers',e:'🧨',distract:.85,charges:2},flare:{n:'Road flare',e:'🎆',distract:.8,light:1,charges:1},
+  keyring:{n:'Master key ring',e:'🗝️'},lockpick:{n:'Lock pick set',e:'🪛'},cleaver:{n:'Meat cleaver',e:'🔪',weapon:4},extinguisher:{n:'Fire extinguisher',e:'🧯',weapon:3,distract:.75,charges:1},
   radio:{n:'Hand-crank radio',e:'📻',comms:1},backpack:{n:'Backpack',e:'🎒',capacity:8},powerbank:{n:'Power bank',e:'🔌',recharge:70,use:1}
 };
 const POCKET_CHOICES=['phone','keys','wallet','lighter','pocketknife','minilight','waterbottle','granola','painkillers','gum','multitool','bandana','earbuds','pen','lipbalm'];
@@ -294,7 +325,10 @@ const KW=[[/pepper ?spray|mace|taser|stun/i,{weapon:4,distract:.8,e:'🌶️'}],
 const CATS={grocery:{e:'🛒',l:'Grocery',dm:.05},pharmacy:{e:'💊',l:'Pharmacy',dm:.05},hardware:{e:'🔨',l:'Hardware store',dm:0},sports:{e:'⚾',l:'Sporting goods',dm:0},
   gas:{e:'⛽',l:'Gas station',dm:.03},medical:{e:'🏥',l:'Hospital / clinic',dm:.2},police:{e:'🚓',l:'Police station',dm:.15},fire:{e:'🚒',l:'Fire station',dm:.05},
   school:{e:'🏫',l:'School',dm:.05},food:{e:'🍔',l:'Restaurant',dm:0},church:{e:'⛪',l:'Church',dm:-.05},store:{e:'🏬',l:'Department store',dm:.05},
-  park:{e:'🌳',l:'Park',dm:-.03},home:{e:'🏠',l:'Your starting point',dm:-.05}};
+  park:{e:'🌳',l:'Park',dm:-.03},home:{e:'🏠',l:'Your starting point',dm:-.05},
+  office:{e:'🏦',l:'Bank / post office',dm:0},library:{e:'📚',l:'Library',dm:-.05},hotel:{e:'🏨',l:'Hotel / motel',dm:.03},auto:{e:'🔧',l:'Auto shop',dm:0},
+  clothing:{e:'👕',l:'Clothing store',dm:0},electronics:{e:'📱',l:'Electronics store',dm:0},farm:{e:'🌾',l:'Farm supply',dm:-.02},pet:{e:'🐾',l:'Pet store',dm:0},
+  house:{e:'🏚️',l:'House',dm:-.02}};
 const LOOT={grocery:['beans','beans','chips','bread','water','water','sportsdrink','energy','painkillers','batteries','lighter'],
   pharmacy:['bandage','bandage','firstaid','antibiotics','antibiotics','painkillers','water','energy','chips'],
   hardware:['crowbar','hammer','machete','flashlight','batteries','ducttape','rope','gasmask','axe'],
@@ -304,14 +338,20 @@ const LOOT={grocery:['beans','beans','chips','bread','water','water','sportsdrin
   police:['pistol','ammo','ammo','radio','flashlight','firstaid'],fire:['axe','firstaid','gasmask','radio','flare','water'],
   school:['chips','water','bat','sportsdrink','bandage'],food:['bread','chips','kitchenknife','water','beans','sportsdrink'],
   church:['bread','water','bandage','beans','flare'],store:['backpack','flashlight','powerbank','bat','chips','water','batteries','firecrackers'],
-  park:['water'],home:['beans','water','kitchenknife','flashlight','bandage','bread']};
+  park:['water'],home:['beans','water','kitchenknife','flashlight','bandage','bread'],
+  office:['water','chips','firstaid','flashlight','energy'],library:['water','chips','bandage','flashlight','radio'],hotel:['water','chips','bandage','sportsdrink','bread','flashlight'],
+  auto:['crowbar','ducttape','flare','batteries','rope','hammer','powerbank'],clothing:['backpack','bandana','rope'],electronics:['powerbank','batteries','radio','flashlight'],
+  farm:['machete','rope','axe','water','flare','ducttape'],pet:['rope','water','chips'],house:['beans','water','kitchenknife','flashlight','bandage','bread','painkillers','energy']};
 function catOf(t){const s=t.shop||'',a=t.amenity||'';
-  if(/^(supermarket|convenience|grocery|greengrocer)$/.test(s))return'grocery';if(a==='pharmacy'||s==='chemist')return'pharmacy';
+  if(/^(supermarket|convenience|grocery|greengrocer|alcohol|beverages|bakery|butcher)$/.test(s))return'grocery';
+  if(/^(bank|post_office)$/.test(a))return'office';if(a==='library')return'library';if(/^(hotel|motel|guest_house)$/.test(t.tourism||''))return'hotel';
+  if(/^(car_repair|car_parts|tyres)$/.test(s))return'auto';if(/^(clothes|shoes)$/.test(s))return'clothing';if(/^(electronics|mobile_phone|computer)$/.test(s))return'electronics';
+  if(/^(farm|agrarian|garden_centre)$/.test(s))return'farm';if(s==='pet')return'pet';if(a==='pharmacy'||s==='chemist')return'pharmacy';
   if(/^(hardware|doityourself)$/.test(s))return'hardware';if(/^(sports|outdoor)$/.test(s))return'sports';if(a==='fuel')return'gas';
   if(/^(hospital|clinic|doctors)$/.test(a))return'medical';if(a==='police')return'police';if(a==='fire_station')return'fire';if(a==='school')return'school';
   if(/^(restaurant|fast_food|cafe|bar|pub)$/.test(a))return'food';if(a==='place_of_worship')return'church';if(/^(department_store|variety_store|general)$/.test(s))return'store';
   if(t.leisure==='park')return'park';return null;}
-const CAPS={food:10,park:8};
+const CAPS={food:16,park:10};
 
 /* ---------- STATE ---------- */
 let map,tiles,S=null,TOWN=null,phase='setup',busy=false,uid=0;
@@ -378,7 +418,10 @@ let netFails=0,placeErr=[];
 const PHOTON_CATS=[['supermarket','shop:supermarket'],['convenience store','shop:convenience'],['pharmacy','amenity:pharmacy'],['hardware store','shop:hardware'],
   ['sporting goods','shop:sports'],['gas station','amenity:fuel'],['hospital','amenity:hospital'],['clinic','amenity:clinic'],['police','amenity:police'],
   ['fire station','amenity:fire_station'],['school','amenity:school'],['restaurant','amenity:restaurant'],['fast food','amenity:fast_food'],
-  ['church','amenity:place_of_worship'],['department store','shop:department_store'],['park','leisure:park']];
+  ['church','amenity:place_of_worship'],['department store','shop:department_store'],['park','leisure:park'],
+  ['dollar store','shop:variety_store'],['cafe','amenity:cafe'],['bar','amenity:bar'],['bank','amenity:bank'],['post office','amenity:post_office'],['library','amenity:library'],
+  ['hotel','tourism:hotel'],['motel','tourism:motel'],['auto repair','shop:car_repair'],['auto parts','shop:car_parts'],['clothing','shop:clothes'],['electronics','shop:electronics'],
+  ['farm supply','shop:agrarian'],['pet store','shop:pet'],['liquor store','shop:alcohol']];
 async function photonPlaces(c,R){
   const dLat=R/111320,dLon=R/(111320*Math.cos(c.lat*Math.PI/180));const bbox=[c.lon-dLon,c.lat-dLat,c.lon+dLon,c.lat+dLat].map(v=>v.toFixed(5)).join(',');
   $('#status').textContent='Scouting real places… (backup search)';
@@ -405,8 +448,9 @@ async function geocode(q,cc){
 }
 async function overpass(c,R){
   const q=`[out:json][timeout:12];(
-nwr["shop"~"^(supermarket|convenience|grocery|greengrocer|chemist|hardware|doityourself|sports|outdoor|department_store|variety_store|general)$"](around:${R},${c.lat},${c.lon});
-nwr["amenity"~"^(pharmacy|fuel|hospital|clinic|doctors|police|fire_station|school|restaurant|fast_food|cafe|bar|pub|place_of_worship)$"](around:${R},${c.lat},${c.lon});
+nwr["shop"~"^(supermarket|convenience|grocery|greengrocer|alcohol|beverages|bakery|butcher|chemist|hardware|doityourself|sports|outdoor|department_store|variety_store|general|car_repair|car_parts|tyres|clothes|shoes|electronics|mobile_phone|computer|farm|agrarian|garden_centre|pet)$"](around:${R},${c.lat},${c.lon});
+nwr["amenity"~"^(pharmacy|fuel|hospital|clinic|doctors|police|fire_station|school|restaurant|fast_food|cafe|bar|pub|place_of_worship|bank|post_office|library)$"](around:${R},${c.lat},${c.lon});
+nwr["tourism"~"^(hotel|motel|guest_house)$"](around:${R},${c.lat},${c.lon});
 nwr["leisure"="park"]["name"](around:${R},${c.lat},${c.lon}););out center tags;`;
   for(const ep of['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter']){
     $('#status').textContent='Scouting real places… ('+ep.split('/')[2]+')';
@@ -483,10 +527,10 @@ function toPlaces(els,c){
     (byCat[cat]=byCat[cat]||[]).push({id:String(el.type)[0]+el.id,name:nm,cat,lat:+lat,lon:+lon,d:hav(c,{lat:+lat,lon:+lon})});}
   const places=[];
   for(const[cat,arr]of Object.entries(byCat)){arr.sort((a,b)=>a.d-b.d);let n=0;
-    for(const p of arr){if(places.some(q=>q.cat===cat&&(q.id===p.id||(q.name===p.name&&hav(q,p)<150))))continue;places.push(p);if(++n>=(CAPS[cat]||12))break;}}
+    for(const p of arr){if(places.some(q=>q.cat===cat&&(q.id===p.id||(q.name===p.name&&hav(q,p)<150))))continue;places.push(p);if(++n>=(CAPS[cat]||20))break;}}
   return places;
 }
-const NOMI_Q=['supermarket','convenience store','pharmacy','hardware store','gas station','hospital','police','fire station','school','restaurant','fast food','church','park','dollar store'];
+const NOMI_Q=['supermarket','convenience store','pharmacy','hardware store','gas station','hospital','police','fire station','school','restaurant','fast food','church','park','dollar store','bank','library','motel','auto repair'];
 async function nominatimPlaces(c,R){
   const dLat=R/111320,dLon=R/(111320*Math.cos(c.lat*Math.PI/180));const vb=[c.lon-dLon,c.lat+dLat,c.lon+dLon,c.lat-dLat].map(v=>v.toFixed(5)).join(',');
   const out=[];let fails=0;
@@ -548,13 +592,13 @@ function poiIcon(p,extra=''){return L.divIcon({className:'poi '+extra,html:`<spa
 function addPlaceMarker(p){const m=L.marker([p.lat,p.lon],{icon:poiIcon(p)}).addTo(map);m.on('click',()=>onMapClick(p.lat,p.lon,p));L_.markers[p.id]=m;}
 function beginPlacement(){
   clearLayers();S=null;tmp={start:null,origin:null};
-  TOWN.places=TOWN.places.filter(p=>p.cat!=='home');TOWN.places.forEach(p=>{delete p.searched;delete p.fort;});
+  TOWN.places=TOWN.places.filter(p=>p.cat!=='home');TOWN.places=TOWN.places.filter(p=>p.cat!=='house');TOWN.places.forEach(p=>{delete p.searched;delete p.fort;delete p.rs;delete p._rooms;delete p.unl;});
   TOWN.places.forEach(addPlaceMarker);
   map.setView([TOWN.center.lat,TOWN.center.lon],14);
   $('#where').textContent=TOWN.name;$('#scenName').textContent=SCENS[scenKey].name;
   $('#log').innerHTML='';$('#inv').innerHTML='';$('#bars').innerHTML='';$('#clock').textContent='--';
   $('#locbox').innerHTML='<h3>Set the scene</h3><div class="hint">Tap the map or a place marker. First where you are, then where it starts.</div>';
-  phase='start';$('#actbox').classList.add('hidden');hud();if(MOB)setSheet('min');
+  phase='start';$('#actbox').classList.add('hidden');$('#bldg').classList.add('hidden');hud();if(MOB)setSheet('min');
   if(TOWN.geo){onMapClick(TOWN.geo.lat,TOWN.geo.lon,null);if(tmp.start&&!tmp.start.place)tmp.start.name='Your real location';map.setView([TOWN.geo.lat,TOWN.geo.lon],15);}
   showBanner();
 }
@@ -568,7 +612,7 @@ function showBanner(){
 }
 function nearestPlace(pt,maxD){let best=null,bd=maxD;for(const p of TOWN.places){const d=hav(pt,p);if(d<bd){bd=d;best=p;}}return best;}
 function onMapClick(lat,lon,place){
-  if(phase==='play'){if(place)openPlacePopup(place);return;}
+  if(phase==='play'){if(place)openPlacePopup(place);else if(S&&!S.over&&!busy)openSpotPopup(lat,lon);return;}
   if(phase!=='start'&&phase!=='origin')return;
   const pt={lat,lon};const snap=place||nearestPlace(pt,60);
   if(phase==='start'){
@@ -618,7 +662,7 @@ function startGame(){
   L_.zone=L.circle([S.origin.lat,S.origin.lon],{radius:sc.r0,color:sc.color,weight:2,fillOpacity:.18,interactive:false}).addTo(map);
   L_.org=L.marker([S.origin.lat,S.origin.lon],{icon:L.divIcon({className:'org',html:`<span>${sc.origIcon}</span>`,iconSize:[32,32]}),interactive:false}).addTo(map);
   L_.me=L.marker([S.pos.lat,S.pos.lon],{icon:L.divIcon({className:'me',html:'<span>🧍</span>',iconSize:[34,34]}),interactive:false,zIndexOffset:1000}).addTo(map);
-  phase='play';setTab('here');setSheet(MOB?'min':'mid');setTimeout(()=>centerOn(S.pos.lat,S.pos.lon),350);
+  phase='play';setTab('here');setSheet(MOB?'min':'mid');setTimeout(()=>showBuilding(),400);
   const intro=sc.intro(S.origin.name);
   log(intro,'sys');
   log(`Goal: stay alive. Word of an evacuation should come through. ${hasComms()?'Your phone will pick it up.':'With no phone or radio you’ll hear late, so listen for it.'} Tap places on the map to move. Scavenge for supplies.`,'sys');
@@ -707,7 +751,7 @@ async function routeEvent(story){
   const out=await opts[i].go();story.push(txt+' '+out);if(S.hp<=0)gameOver(false,'Your wounds were too much.');
 }
 async function travelTo(p){
-  if(busy||S.over||p.id===S.at)return;busy=true;map.closePopup();AI.pending=null;
+  if(busy||S.over||p.id===S.at)return;busy=true;map.closePopup();AI.pending=null;$('#bldg').classList.add('hidden');
   const from={...S.pos},d=hav(from,p),speed=S.energy<15?3:4.5,hrs=d/1000/speed;
   let inz=0;for(let i=1;i<=20;i++)if(inZone(lerp(from,p,i/20),S.t+hrs/2))inz++;
   const pEnc=clamp((.06+.5*(inz/20)+(isNight()?.1:0)+(d>1500?.05:0))*S.scen.encMul*alertMul(),0,.85);
@@ -719,13 +763,13 @@ async function travelTo(p){
     else if(Math.random()<.4)await routeEvent(story);
   }
   if(S.over){busy=false;render();return;}
-  S.pos={lat:p.lat,lon:p.lon};S.at=p.id;render();centerOn(p.lat,p.lon);const first=!S.visited.has(p.id);S.visited.add(p.id);
+  S.pos={lat:p.lat,lon:p.lon};S.at=p.id;S.room=null;render();centerOn(p.lat,p.lon);const first=!S.visited.has(p.id);S.visited.add(p.id);
   const dg=danger(p),mins=Math.round((S.t-startT)*60);
   story.push(`You reach ${p.name} after ${mins} minutes.${first?'':' You\'ve been here before.'}${p.fort?' Your barricade is still standing.':''}`);
   log(`On the way to ${p.name}: ${story.join(' ')} Danger here: ${dg}.`,dg==='overrun'||dg==='high'?'bad':'');
   await modal(`<h2 class="mtitle">${CATS[p.cat].e} ${esc(p.name)}</h2><div class="story">${story.map(x=>`<p>${esc(x)}</p>`).join('')}</div><p><span class="badge d-${dg}">${dg}</span> <span class="hint">${fmtTime(S.t)}</span></p>`,[{label:'Continue',cls:'primary'}]);
   narrate(`Player walked ${(d/1000).toFixed(1)} km to ${p.name}, a ${CATS[p.cat].l}. What happened: ${story.join(' ')} Danger level: ${dg}. It is ${isNight()?'night':'daytime'}.`);
-  checkEvents();busy=false;render();
+  checkEvents();busy=false;render();if(!S.over)showBuilding();
 }
 async function scavenge(){
   if(busy||S.over)return;busy=true;const p=place(S.at);advance(1);
@@ -959,6 +1003,247 @@ function customMove(t){t=spellFix(t);
   return{k,chance:clamp(chance+S.scen.hideMod*(k==='chide'?1:0),.05,.85),item:dis||m[0]};
 }
 
+/* ---------- ROOMS ---------- */
+// [name, emoji, loot ids, danger mod, description, optional?]
+const ROOMS={
+  grocery:[['Checkout lanes','🧾',['chips','energy','lighter','gum'],.05,'Registers hang open. Candy and lighters are scattered across the floor.'],
+    ['Produce','🥬',['bread','water'],0,'The fruit is already going soft. Flies everywhere.'],
+    ['Canned goods aisle','🥫',['beans','beans','beans','chips'],0,'Most shelves are bare, but a few cans rolled under the racks.'],
+    ['Drinks cooler','🧊',['water','water','sportsdrink','energy'],0,'The coolers still hum on backup power.'],
+    ['Deli & bakery','🥖',['bread','bread','kitchenknife'],0,'Bread on the racks, knives behind the deli glass.'],
+    ['Pharmacy counter','💊',['painkillers','bandage','antibiotics'],.05,'The gate is half pulled down.',1],
+    ['Restrooms','🚻',['painkillers'],.1,'It smells awful. One stall door is locked from the inside.'],
+    ['Stockroom','📦',['beans','water','chips','batteries','ducttape'],.08,'Pallets stacked to the ceiling. Dark in the corners.'],
+    ["Manager's office",'🗄️',['flashlight','radio','firstaid','keyring'],.02,'Papers everywhere. A first aid kit hangs on the wall.',1]],
+  store:[['Sales floor','🏬',['chips','water','batteries'],.05,'Racks knocked over. Price tags crunch underfoot.'],
+    ['Grocery aisle','🥫',['beans','chips','water','bread'],0,'Picked over, but not empty.'],
+    ['General merchandise','🔦',['flashlight','batteries','ducttape','lighter','powerbank'],0,'Tools, batteries, and odds and ends.'],
+    ['Sporting goods','⚾',['bat','backpack','firecrackers'],0,'A rack of bats, mostly still there.'],
+    ["Men's clothing",'👔',['backpack','bandana'],-.02,'Quiet. Mannequins stare at nothing.'],
+    ["Women's clothing",'👗',['backpack','bandana'],-.02,'Clothes piled on the floor, like someone hid under them.'],
+    ['Pharmacy','💊',['painkillers','bandage','firstaid'],.05,'Pill bottles rattle underfoot.',1],
+    ['Restrooms','🚻',['painkillers'],.1,'Water is running somewhere inside.'],
+    ['Stockroom','📦',['water','beans','ducttape','rope','batteries'],.08,'Boxes stacked high. A loading door bangs in the wind.']],
+  food:[['Seating area','🪑',['chips'],.05,'Chairs overturned. Half-eaten meals on the tables.'],
+    ['Counter & register','🧾',['lighter','energy'],.03,'The register drawer is open and empty.'],
+    ['Kitchen','🍳',['cleaver','kitchenknife','bread','extinguisher'],.05,'Grease on the floor. Knives still on the magnetic strip.'],
+    ['Walk-in cooler','🧊',['water','sportsdrink','beans'],.02,'Cold air rolls out. It is still mostly stocked.'],
+    ['Dry storage','📦',['beans','bread','chips'],0,'Sacks of flour and cans of sauce.'],
+    ['Restrooms','🚻',['painkillers'],.1,'The mirror is cracked. The light flickers.'],
+    ['Office','🗄️',['flashlight','firstaid'],0,'A tiny office with a safe that won\'t open.',1]],
+  pharmacy:[['Front aisles','🧴',['painkillers','bandage','chips','water'],.05,'Cold medicine and snacks, half gone.'],
+    ['Pharmacy counter','💊',['antibiotics','painkillers','firstaid'],.08,'Prescription bags torn open on the counter.'],
+    ['Drug storage','🔒',['antibiotics','antibiotics','firstaid'],.1,'A locked cage. Someone already tried to pry it open.'],
+    ['Restrooms','🚻',['bandage'],.1,'Someone tried to patch themselves up in here. There\'s blood in the sink.'],
+    ['Stockroom','📦',['bandage','water','energy'],.05,'Cartons of supplies, mostly untouched.']],
+  hardware:[['Tool aisle','🔨',['hammer','crowbar','machete','axe'],.03,'Pegboards of tools. Plenty of gaps.'],
+    ['Paint & chemicals','🎨',['gasmask','ducttape'],0,'Respirators hang by the paint counter.'],
+    ['Lumber yard','🪵',['rope','hammer'],.05,'Stacks of boards. Good for barricades.'],
+    ['Garden center','🌱',['machete','water','rope'],.02,'Open to the sky. Hoses and machetes.',1],
+    ['Checkout','🧾',['flashlight','batteries','lighter','lockpick'],.03,'Impulse buys by the registers.'],
+    ['Stockroom','📦',['ducttape','rope','batteries','flashlight'],.05,'Shelves of boxed supplies.']],
+  sports:[['Sales floor','⚾',['bat','sportsdrink'],.03,'Jerseys and bats.'],
+    ['Camping gear','⛺',['backpack','mre','flashlight','rope','lighter'],0,'Tents, packs and freeze-dried food.'],
+    ['Hunting counter','🎯',['machete','pistol','ammo'],.05,'The glass case is smashed. Most of it is gone.',1],
+    ['Fitness aisle','🏋️',['sportsdrink','energy'],0,'Protein bars and energy drinks.'],
+    ['Stockroom','📦',['mre','water','backpack'],.05,'Back stock nobody got to.']],
+  gas:[['Store aisles','🍫',['chips','granola','energy'],.03,'Snack racks, half emptied.'],
+    ['Drinks cooler','🧊',['water','sportsdrink','energy'],0,'Cold drinks behind foggy glass.'],
+    ['Counter','🧾',['lighter','firecrackers','powerbank'],.03,'Lighters, chargers and fireworks behind the counter.'],
+    ['Restrooms','🚻',[],.12,'The door is around back. It\'s unlocked.'],
+    ['Back office','🗄️',['flashlight','firstaid','radio'],0,'Security monitors show empty pumps.'],
+    ['Garage bay','🔧',['crowbar','ducttape','flare','rope'],.05,'A car is still up on the lift.',1]],
+  medical:[['Waiting room','🪑',['water','chips'],.15,'Chairs overturned. Bloody footprints lead deeper inside.'],
+    ['Exam rooms','🩺',['bandage','painkillers'],.1,'Curtains pulled around every bed.'],
+    ['Supply closet','🧰',['firstaid','bandage','gasmask'],.05,'Shelves of gauze and masks.'],
+    ['Hospital pharmacy','💊',['antibiotics','antibiotics','painkillers'],.12,'The jackpot, if you can get in.'],
+    ['Cafeteria','🍽️',['bread','beans','water','kitchenknife'],.08,'Trays still on the tables.'],
+    ['Security office','🛡️',['flashlight','radio','bat','keyring'],.05,'Radios on chargers. A baton on the desk.'],
+    ['Morgue','⚰️',['bandage'],.3,'Cold. Quiet. Too quiet.',1]],
+  police:[['Front lobby','🪑',['water'],.08,'Bulletproof glass, cracked from the inside.'],
+    ['Offices','🗄️',['flashlight','radio','firstaid','keyring'],.05,'Desks shoved against the windows.'],
+    ['Armory','🔫',['pistol','ammo','ammo'],.1,'The cage is open. A few things are left.'],
+    ['Holding cells','⛓️',[],.25,'Something is still locked in one of the cells.'],
+    ['Evidence room','📦',['machete','firecrackers','powerbank','lockpick'],.05,'Bags and boxes of who-knows-what.'],
+    ['Locker room','🧥',['backpack','energy','firstaid'],.03,'Lockers hang open. Gym bags on the benches.']],
+  fire:[['Apparatus bay','🚒',['axe','extinguisher','rope'],.03,'One truck is gone. The other is still here.'],
+    ['Kitchen','🍳',['beans','bread','water','kitchenknife'],0,'A pot of chili, gone cold.'],
+    ['Bunk room','🛏️',['flashlight','energy'],-.03,'Neat beds. A good place to rest.'],
+    ['Supply room','🧰',['firstaid','gasmask','flare','radio'],.02,'Medical bags and breathing gear.'],
+    ['Office','🗄️',['radio','flashlight'],0,'Maps of town pinned to the wall.']],
+  school:[['Classrooms','📚',['chips','flashlight'],.05,'Backpacks still under the desks.'],
+    ['Cafeteria','🍽️',['chips','sportsdrink','bread'],.05,'Lunch trays everywhere.'],
+    ['Kitchen','🍳',['beans','beans','water','kitchenknife','extinguisher'],.03,'Industrial cans of food.'],
+    ['Gym','🏀',['bat','sportsdrink','backpack'],.08,'Your footsteps echo.'],
+    ["Nurse's office",'🩹',['bandage','firstaid','painkillers'],.03,'A small medicine cabinet, still locked.'],
+    ['Main office','🗄️',['radio','flashlight','keyring'],.02,'The PA system mic is still on.'],
+    ["Janitor's closet",'🧹',['ducttape','gasmask','rope'],0,'Cramped, but you could hide in here.']],
+  church:[['Sanctuary','⛪',[],-.05,'Candles burned down to stubs. It feels safe here.'],
+    ['Fellowship hall','🪑',['water','chips'],0,'Folding tables and a coffee urn.'],
+    ['Kitchen','🍳',['beans','bread','water','kitchenknife'],0,'Casserole dishes and canned goods.'],
+    ['Food pantry','🥫',['beans','beans','bread','water'],0,'Donation shelves, still half full.'],
+    ["Pastor's office",'🗄️',['flashlight','firstaid','radio'],-.03,'Quiet. A radio on the desk.'],
+    ['Basement','🕯️',['flare','water','bandage'],.08,'Storage, and something shuffling in the dark.',1]],
+  park:[['Playground','🛝',[],.05,'A swing creaks in the wind.'],
+    ['Restrooms','🚻',['water'],.1,'Concrete block building. Water fountain outside.'],
+    ['Picnic shelter','🏕️',['water','chips'],0,'Someone left a cooler.'],
+    ['Maintenance shed','🛠️',['rope','machete','ducttape'],.03,'Padlocked, but the hinges are rusty.',1]],
+  home:[['Living room','🛋️',['batteries','flashlight','chips'],0,'Family photos on the wall.'],
+    ['Kitchen','🍳',['beans','bread','water','kitchenknife'],0,'Pantry, fridge and a knife block.'],
+    ['Bedroom','🛏️',['backpack','painkillers','flashlight'],0,'A closet and a nightstand.'],
+    ['Bathroom','🚿',['painkillers','bandage','antibiotics'],0,'A medicine cabinet over the sink.'],
+    ['Garage','🚗',['hammer','crowbar','ducttape','rope','flare'],.03,'Tools on a pegboard.',1],
+    ['Basement','🕯️',['beans','water','batteries','bat'],.08,'Shelves of storage bins.',1]],
+  office:[['Lobby','🪑',['water'],.03,'Glass doors, a velvet rope, nobody in line.'],
+    ['Front counter','🧾',['chips','energy'],.03,'Pens on chains. A candy dish.'],
+    ['Back office','🗄️',['flashlight','firstaid','radio','keyring'],0,'Emergency kit on the wall.'],
+    ['Break room','☕',['chips','water','energy','bread'],0,'A fridge full of lunches.'],
+    ['Restrooms','🚻',[],.1,'The lights are motion-activated. They flick on.'],
+    ['Vault / sorting room','🔒',['batteries','ducttape'],.05,'Heavy door. Good place to hole up.']],
+  library:[['Book stacks','📚',[],-.05,'Rows and rows of quiet.'],
+    ['Computer lab','💻',['powerbank','batteries'],0,'Screens dark. Chargers in the desks.'],
+    ["Children's area",'🧸',['chips','sportsdrink'],0,'Snacks from story time.'],
+    ['Break room','☕',['water','chips','energy'],0,'A vending machine, unplugged.'],
+    ['Restrooms','🚻',[],.08,'Quiet. Too quiet.']],
+  hotel:[['Lobby','🛎️',['water','chips'],.05,'The bell on the desk. Nobody comes.'],
+    ['Guest rooms','🛏️',['painkillers','backpack','energy','water'],.05,'Doors ajar down the hall. Luggage left behind.'],
+    ['Breakfast area','🥐',['bread','water','sportsdrink'],0,'Waffle irons and cereal bins.'],
+    ['Laundry room','🧺',['bandana','ducttape'],0,'Warm and humming.'],
+    ['Maintenance room','🛠️',['hammer','flashlight','ducttape','rope','keyring'],.03,'A toolbox and a master key ring.'],
+    ['Pool','🏊',[],.1,'Something floats in the water.',1]],
+  auto:[['Front counter','🧾',['energy','lighter','chips'],.02,'Air fresheners and energy drinks.'],
+    ['Parts shelves','🔩',['ducttape','batteries','flare','powerbank'],0,'Batteries, flares and tape.'],
+    ['Service bay','🚗',['crowbar','hammer','rope'],.05,'A car on the lift. Tools everywhere.'],
+    ['Tool room','🧰',['crowbar','hammer','extinguisher'],0,'Big rolling toolboxes.'],
+    ['Office','🗄️',['flashlight','radio'],0,'Invoices and a radio.']],
+  clothing:[['Sales floor','👕',['bandana','backpack'],.03,'Racks knocked over.'],
+    ["Men's",'👔',['backpack'],0,'Coats and boots.'],
+    ["Women's",'👗',['backpack','bandana'],0,'Scarves and bags.'],
+    ['Fitting rooms','🚪',[],.12,'A curtain moves.'],
+    ['Stockroom','📦',['backpack','bandana','rope'],.03,'Boxes of new stock.']],
+  electronics:[['Sales floor','📺',['batteries'],.03,'TVs dark. Smashed display cases.'],
+    ['Phone counter','📱',['powerbank','powerbank'],0,'Chargers and power banks.'],
+    ['Repair desk','🛠️',['ducttape','flashlight','lockpick'],0,'Tiny tools and parts.'],
+    ['Stockroom','📦',['radio','batteries','powerbank'],.03,'Boxed electronics.']],
+  farm:[['Feed aisle','🌾',['water','chips'],0,'Sacks of feed stacked high.'],
+    ['Tools & hardware','🪓',['axe','machete','rope','ducttape'],.02,'Real tools, built to last.'],
+    ['Outdoor yard','🚜',['rope','water','flare'],.05,'Fencing, tanks and a tractor.'],
+    ['Stockroom','📦',['water','mre','rope'],.03,'Bulk supplies.']],
+  pet:[['Food aisle','🦴',['chips','water'],0,'Bags of kibble. A dog would love this.'],
+    ['Grooming room','✂️',['bandage'],.03,'Tubs and cages, all empty.'],
+    ['Stockroom','📦',['rope','water'],.03,'Leashes and supplies.']]
+};
+ROOMS.house=ROOMS.home.concat([['Attic','📦',['backpack','rope'],.05,'Hot, dusty and dark.',1]]);
+function hashStr(s){let h=0;for(const ch of s)h=(h*31+ch.charCodeAt(0))|0;return Math.abs(h);}
+function roomsOf(p){
+  if(p._rooms)return p._rooms;
+  const def=ROOMS[p.cat]||ROOMS.home;
+  p._rooms=def.filter(r=>!r[5]||hashStr(p.id+r[0])%2===0).map(([n,e,loot,dm,d])=>({n,e,loot,dm,d}));
+  return p._rooms;
+}
+function roomFromText(p,T){T=T.toLowerCase();return roomsOf(p).find(r=>T.includes(r.n.toLowerCase())||r.n.toLowerCase().split(/[ &/]+/).some(w=>w.length>4&&T.includes(w.replace(/'s$/,''))));}
+async function searchRoom(rn){
+  if(busy||S.over)return;const p=place(S.at),r=roomsOf(p).find(x=>x.n===rn);if(!r)return;busy=true;S.room=rn;
+  advance(.5);
+  if(!S.over&&Math.random()<locEnc(p)*(.45+r.dm*2))await encounter(`in the ${r.n.toLowerCase()} at ${p.name}`);
+  if(S.over){busy=false;render();return;}
+  p.rs=p.rs||{};const s=p.rs[rn]||0;
+  let n=[2,1,1,0][Math.min(s,3)]-(isNight()&&!hasTag('light')?1:0)+(hasTag('scav')&&s<2?1:0);
+  if(!r.loot.length)n=0;p.rs[rn]=s+1;
+  const found=[];for(let i=0;i<n;i++)if(Math.random()<.75)found.push(pick(r.loot));
+  const got=[],left=[];for(const id of found){if(addItem(mkItem(id)))got.push(ITEMS[id].e+' '+ITEMS[id].n);else left.push(ITEMS[id].n);}
+  const msg=got.length?`You find ${got.join(', ')}.`:left.length?'':(s>=2||!r.loot.length?'Nothing useful left in here.':isNight()&&!hasTag('light')?'Too dark to find much.':'You come up empty.');
+  log(`${r.e} ${p.name}, ${r.n}: ${msg}${left.length?` No room for ${left.join(', ')}.`:''}`,got.length?'good':'');
+  await modal(`<h2 class="mtitle">${r.e} ${esc(r.n)}</h2><p>${esc(r.d)}</p><p>${esc(msg)}${left.length?` <span class="hint">Found ${esc(left.join(', '))}, but no room. Drop something or find a backpack.</span>`:''}</p><p class="hint">${esc(p.name)} · ${fmtTime(S.t)}</p>`,[{label:'Continue',cls:'primary'}]);
+  narrate(`Player searched the ${r.n} at ${p.name} (${CATS[p.cat].l}). Found: ${found.map(i=>ITEMS[i].n).join(', ')||'nothing'}.`);
+  busy=false;render();
+}
+/* tap-anywhere buildings */
+function openSpotPopup(lat,lon){
+  const near=TOWN.places.find(q=>hav(q,{lat,lon})<40);if(near){openPlacePopup(near);return;}
+  const d=hav(S.pos,{lat,lon}),speed=S.energy<15?3:4.5,min=Math.round(d/1000/speed*60);
+  const html=`<div class="pp"><h4>🏚️ Unmarked building</h4><div class="meta">Houses and buildings here aren't on the map, but you can search one.</div>
+    <span class="hint">${(d/1000).toFixed(2)} km · ~${min} min walk</span><button class="primary spotbtn" data-lat="${lat}" data-lon="${lon}">Go here</button></div>`;
+  L.popup({autoPanPaddingTopLeft:[10,MOB?90:10],autoPanPaddingBottomRight:[10,(MOB?sheetPx():0)+10]}).setLatLng([lat,lon]).setContent(html).openOn(map);
+}
+async function goToSpot(lat,lon){
+  if(busy||S.over)return;map.closePopup();
+  let road='';try{const r=await fetchT(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&lat=${lat}&lon=${lon}`,{},3000);if(r.ok){const j=await r.json();road=(j.address&&j.address.road)||'';}}catch(e){}
+  const kind=pick(['House','House','Small house','Duplex','Mobile home','Apartment building']);
+  const p={id:'u'+(++uid)+'_'+Date.now(),name:road?`${kind} on ${road}`:pick(['Abandoned house','Quiet house','Boarded-up house','Corner house','Mobile home']),cat:'house',lat,lon};
+  TOWN.places.push(p);addPlaceMarker(p);travelTo(p);
+}
+document.addEventListener('click',e=>{const g=e.target.closest('.spotbtn');if(g)goToSpot(+g.dataset.lat,+g.dataset.lon);});
+
+/* ---------- BUILDING VIEW (floor plan + locked doors) ---------- */
+const LOCKABLE=/office|storage|armory|stockroom|vault|evidence|maintenance|tool room|drug|nurse|closet|garage|shed|cells|hunting|basement|pharmacy counter|supply|security|morgue|attic/i;
+function roomLocked(p,r){
+  if(p.cat==='home')return false;if(p.unl&&p.unl[r.n])return false;
+  if(r.lock===undefined){const h=hashStr(p.id+r.n+'L')%10;r.lock=LOCKABLE.test(r.n)?h<6:/restroom/i.test(r.n)?h<1:false;}
+  return r.lock;
+}
+function bldgOpen(){return!$('#bldg').classList.contains('hidden');}
+function showBuilding(){
+  if(!S||S.over)return;const p=place(S.at);if(!p)return;
+  map.flyTo([p.lat,p.lon],18,{duration:.7});
+  setTimeout(()=>{renderFloor();$('#bldg').classList.remove('hidden');if(MOB)setSheet('min');},650);
+}
+function hideBuilding(){$('#bldg').classList.add('hidden');if(S){map.flyTo([S.pos.lat,S.pos.lon],15,{duration:.6});}}
+function renderFloor(){
+  const b=$('#bldg');if(!S||!TOWN)return;const p=place(S.at);if(!p)return;const rs=roomsOf(p),dg=danger(p);
+  const cols=rs.length<=4?2:3;
+  const tiles=rs.map(r=>{const c=(p.rs||{})[r.n]||0,lk=roomLocked(p,r),here=S.room===r.n,door=S.atDoor===r.n,risky=r.dm>=.12;
+    const st=lk?'🔒 Locked':c>=3||(!r.loot.length&&c)?'empty':c?'searched':risky?'⚠️ sounds inside':'';
+    return`<button class="tile${here?' here':''}${lk?' locked':''}${door?' door':''}${c>=3?' done':''}" data-room="${esc(r.n)}">
+      <span class="te">${r.e}</span><span class="tn">${esc(r.n)}</span>${st?`<span class="ts">${st}</span>`:''}
+      ${here?'<span class="tok">🧍</span>':''}${door?'<span class="tok tdoor">🧍</span><span class="dmsg">🔒 Locked</span>':''}</button>`;}).join('');
+  const evac=S.evacOn&&S.at===S.evac.id&&S.t<48;
+  b.innerHTML=`<div class="bhead"><div><div class="bt">${CATS[p.cat].e} ${esc(p.name)}</div><div class="hint"><span class="badge d-${dg}">${dg}</span> ${fmtTime(S.t)}${p.fort?` · 🚪 barricade ${p.fort}/3`:''}</div></div><button id="bMap">🗺️ Map</button></div>
+    <div class="plan" style="grid-template-columns:repeat(${cols},1fr)">${tiles}</div>
+    <div class="bentr">${!S.room&&!S.atDoor?'<span class="tok2">🧍</span> ':''}🚪 Entrance</div>
+    <div class="bacts"><button class="primary" id="bScav">🔍 Quick search (1h)</button><button id="bRest">😮‍💨 Rest (2h)</button><button id="bSleep">😴 Sleep (6h)</button>${evac?'<button class="primary" id="bWait">🚁 Wait for evac</button>':''}</div>
+    <div class="hint" style="text-align:center;margin-top:6px">Tap a room to go in and search it (30 min). Type anything else in “What do you do here?”</div>`;
+  const on=(id,f)=>{const e=$(id);if(e)e.onclick=f;};on('#bMap',hideBuilding);on('#bScav',scavenge);on('#bRest',()=>rest(2));on('#bSleep',()=>rest(6));on('#bWait',waitEvac);
+}
+$('#bldg').addEventListener('click',e=>{const t=e.target.closest('[data-room]');if(t)enterRoom(t.dataset.room);});
+async function enterRoom(rn){
+  if(busy||S.over)return;const p=place(S.at),r=roomsOf(p).find(x=>x.n===rn);if(!r)return;
+  if(roomLocked(p,r)){S.atDoor=rn;render();busy=true;const ok=await lockedDoor(p,r);busy=false;S.atDoor=null;if(!ok){render();return;}}
+  S.atDoor=null;await searchRoom(rn);
+}
+function lockOptions(r){
+  const inv=S.inv,o=[];
+  const kr=inv.find(i=>i.id==='keyring');if(kr)o.push({label:`🗝️ Use the ${kr.n}`,chance:1,k:'key',t:.05});
+  const pickers=[['lockpick',.85],['multitool',.5],['pocketknife',.35],['pen',.2]];
+  let best=null;for(const[id,c]of pickers){const it=inv.find(i=>i.id===id);if(it&&(!best||c>best.c))best={it,c};}
+  const cust=inv.find(i=>i.id==='custom'&&/pick|pin|clip|screwdriver|shim|card/i.test(i.n));if(cust&&(!best||.45>best.c))best={it:cust,c:.45};
+  if(best)o.push({label:`🪛 Pick the lock with ${best.it.n} (20 min)`,chance:best.c,k:'pick',t:.33});
+  const breakers=[['crowbar',.9],['axe',.85],['hammer',.7],['extinguisher',.6],['bat',.55],['machete',.45],['cleaver',.4]];
+  let bb=null;for(const[id,c]of breakers){const it=inv.find(i=>i.id===id);if(it&&(!bb||c>bb.c))bb={it,c};}
+  if(!bb){const w=inv.filter(i=>i.weapon>=3).sort((a,b)=>b.weapon-a.weapon)[0];if(w)bb={it:w,c:.4};}
+  if(bb)o.push({label:`🪓 Break it down with the ${bb.it.n} (loud)`,chance:bb.c,k:'break',t:.15,item:bb.it});
+  o.push({label:'💥 Kick it in (loud, can hurt)',chance:clamp(.3+S.energy/400,.2,.55),k:'kick',t:.1});
+  const ky=inv.find(i=>i.id==='keys');if(ky&&!kr)o.push({label:'🔑 Try your own keys',chance:.05,k:'key',t:.1});
+  o.push({label:'↩️ Leave it',k:'leave'});
+  return o;
+}
+async function lockedDoor(p,r){
+  const opts=lockOptions(r);
+  const i=await modal(`<h2 class="mtitle">🔒 Locked</h2><p>You try the door to the <b>${esc(r.n)}</b>. It won't open.${r.dm>=.12?' You hear something on the other side.':''}</p>`,opts.map(o=>({label:o.label,chance:o.chance})));
+  const o=opts[i];if(o.k==='leave')return false;
+  advance(o.t);if(S.over)return false;
+  const win=Math.random()<o.chance;let txt='';
+  if(o.k==='kick'){S.energy=Math.max(0,S.energy-10);if(!win){S.hp=Math.max(0,S.hp-4);}}
+  if(win){p.unl=p.unl||{};p.unl[r.n]=true;
+    txt={key:'The key turns. Click. You slip inside quietly.',pick:'A few tense minutes, then the lock gives with a soft click.',break:`You wedge the ${o.item?o.item.n.toLowerCase():'tool'} in and heave. The door bursts open with a crack that echoes through the building.`,kick:'Your third kick splinters the frame. The door slams open. That was loud.'}[o.k];}
+  else txt={key:'None of them fit.',pick:'The pins won\'t set. You\'re just making scratches.',break:'The door holds. You\'re making a lot of noise.',kick:'Pain shoots up your leg. The door barely moved. (−4 health)'}[o.k];
+  log(`🔒 ${r.n} at ${p.name}: ${txt}`,win?'good':'bad');
+  await modal(`<h2 class="mtitle">${win?'🔓 Open':'🔒 Still locked'}</h2><p>${esc(txt)}</p>`,[{label:win?`Go into the ${esc(r.n)}`:'Back',cls:'primary'}]);
+  if(o.k==='break'||o.k==='kick'){if(Math.random()<clamp(locEnc(p)*1.6+.08,0,.85))await encounter(`drawn by the noise at ${p.name}`);}
+  if(S.hp<=0&&!S.over)gameOver(false,'You pushed yourself too far.');
+  return win&&!S.over;
+}
+
 /* ---------- FREE-TEXT ACTIONS AT A LOCATION ---------- */
 const SUGGEST=['Barricade the doors','Look out the windows','Search the back room for meds','Treat my wounds','Hide and stay quiet','Set up a noise trap'];
 const AI_EXTRA=['water','chips','bandage','batteries','ducttape','rope'];
@@ -973,9 +1258,10 @@ async function doAction(){
   $('#act').value='';$('#typo').classList.add('hidden');$('#aDo').disabled=false;busy=false;render();
 }
 async function aiResolve(text,p){
-  const allowed=[...new Set([...(LOOT[p.cat]||[]),...AI_EXTRA])];
+  const rms=roomsOf(p),inRoom=roomFromText(p,text)||rms.find(r=>r.n===S.room);
+  const allowed=[...new Set([...(LOOT[p.cat]||[]),...(inRoom?inRoom.loot:rms.flatMap(r=>r.loot)),...AI_EXTRA])];
   const prompt=`You are the fair, gritty game master of a survival game. Scenario: ${S.scen.name}. Real town: ${TOWN.name}.
-Location: ${p.name} (${CATS[p.cat].l}). Searched before: ${p.searched||0} times. Barricade level: ${p.fort||0}/3. Danger here: ${danger(p)}. Time: ${fmtTime(S.t)}${isNight()?' (night)':''}.
+Location: ${p.name} (${CATS[p.cat].l}). Rooms here: ${rms.map(r=>r.n).join(', ')}. Player is in: ${inRoom?inRoom.n:'the main area'}. Searched before: ${p.searched||0} times. Barricade level: ${p.fort||0}/3. Danger here: ${danger(p)}. Time: ${fmtTime(S.t)}${isNight()?' (night)':''}.
 Player: health ${Math.round(S.hp)}, food ${Math.round(S.food)}, water ${Math.round(S.water)}, energy ${Math.round(S.energy)}${S.infected?', infected':''}.
 Inventory: ${S.inv.map(i=>i.n).join(', ')||'nothing'}.
 The player says: "${text.replace(/"/g,"'")}"
@@ -1002,7 +1288,8 @@ function localResolve(t,p){t=spellFix(t);
     return{kind:'scout',hours:.5,energy_change:-3,noise:.05,items_used:[],narration:dz>0?`You watch the streets for a while. The ${S.scen.zone.toLowerCase()} looks to be about ${dz} meters from here, and you spot movement to the ${pick(['north','east','south','west'])}. You'll be more careful for a few hours.`:`From the window you can see it: you're inside the ${S.scen.zone.toLowerCase()}. Shapes move between the houses. You note the quietest way out.`};}
   if(/search|look for|check|raid|loot|find|scavenge|dig/.test(T)){
     const want=/med|pill|bandage|first aid|drug|antibi/.test(T)?'heal':/food|eat|snack|can/.test(T)?'food':/water|drink/.test(T)?'water':/weapon|knife|bat|gun|tool/.test(T)?'weapon':null;
-    let pool=LOOT[p.cat]||[];const fit=pool.filter(id=>want&&(ITEMS[id][want]||(want==='heal'&&ITEMS[id].cure)));if(fit.length)pool=fit;
+    const rm=roomFromText(p,T)||(S.room&&roomsOf(p).find(r=>r.n===S.room));if(rm){S.room=rm.n;}
+    let pool=(rm&&rm.loot.length?rm.loot:LOOT[p.cat])||[];const fit=pool.filter(id=>want&&(ITEMS[id][want]||(want==='heal'&&ITEMS[id].cure)));if(fit.length)pool=fit;
     const s=p.searched||0,n=Math.max(0,[2,2,1,0][Math.min(s,3)]-(isNight()&&!hasTag('light')?1:0));const found=[];for(let i=0;i<n;i++)if(Math.random()<.75)found.push(pick(pool));
     return{kind:'search',hours:1,energy_change:-4,noise:.3,items_used:[],items_found:found,narration:found.length?`You go through ${want?'every spot something like that might be':'the place carefully'}.`:`You search, but ${s>=2?'the place has been picked clean':'come up empty'}.`};}
   if(/treat|bandage|patch|clean.*(wound|cut)|first aid|heal/.test(T)){const h=S.inv.filter(i=>i.heal).sort((a,b)=>b.heal-a.heal)[0];
@@ -1048,7 +1335,7 @@ async function applyResolution(r,text,p,ai){
 
 /* ---------- END ---------- *//* ---------- END ---------- */
 async function gameOver(won,why){
-  if(S.over)return;S.over=true;render();
+  if(S.over)return;S.over=true;$('#bldg').classList.add('hidden');render();
   log(why,won?'good':'bad');narrate(`The game ends. ${won?'The player survived and was evacuated.':'The player died.'} ${why}`);
   const i=await modal(`<h2 class="mtitle">${won?'EVACUATED':'YOU DIDN’T MAKE IT'}</h2><p>${why}</p>
     <p class="hint">Survived ${Math.floor(S.t)} hours · Visited ${S.visited.size} places · Carrying ${S.inv.length} items</p>`,
@@ -1067,11 +1354,11 @@ function render(){
   const p=place(S.at),dg=danger(p);
   let acts='';
   if(!S.over){
-    acts+=`<button class="primary" id="aScav">🔍 Scavenge (1h)</button><button id="aRest">😮‍💨 Rest (2h)</button><button id="aSleep">😴 Sleep (6h)</button>`;
+    acts+=`<button class="primary" id="aScav">🔍 Quick search (1h)</button><button id="aRest">😮‍💨 Rest (2h)</button><button id="aSleep">😴 Sleep (6h)</button>`;
     if(S.evacOn&&S.at===S.evac.id&&S.t<48)acts+=`<button class="primary" id="aWait">🚁 Wait for evac</button>`;
   }
   $('#locbox').innerHTML=`<h3>${CATS[p.cat].e} ${esc(p.name)}</h3><div><span class="badge d-${dg}">${dg}</span> <span class="hint">${CATS[p.cat].l}${p.searched?` · searched ${p.searched}×`:''}${p.fort?` · 🚪 barricade ${p.fort}/3`:''}${S.alert&&S.t<S.alert?' · 👀 alert':''}${S.dog?' · 🐕 dog with you':''}${S.infected?' · <b style="color:#c792ea">INFECTED</b>':''}</span></div>
-    <div class="acts">${acts}</div><div class="hint" style="margin-top:8px">${S.over?'Game over.':'Tap a place on the map to travel there, or type what you do below.'}${S.evacOn?` Evac: <b>${esc(S.evac.name)}</b>, Day 3, 7 to 11 AM.`:''}</div>`;
+    <div class="acts">${acts}</div>${S.over?'':`<button id="aInside" style="width:100%;margin-top:10px">🏢 View floor plan</button><div class="rooms-h">Rooms · tap one to search it (30 min)${S.room?` · you're in the <b>${esc(S.room)}</b>`:''}</div><div class="rooms">${roomsOf(p).map(r=>{const c=(p.rs||{})[r.n]||0;return`<button class="room${S.room===r.n?' on':''}${c>=3||!r.loot.length&&c?' done':''}" data-room="${esc(r.n)}">${r.e} ${esc(r.n)}${roomLocked(p,r)?'<small>🔒 locked</small>':c?`<small>${c>=3||!r.loot.length?'empty':'searched'}</small>`:''}</button>`;}).join('')}</div>`}<div class="hint" style="margin-top:8px">${S.over?'Game over.':'Tap a place on the map to travel there (or any empty spot to search a house), or type what you do below.'}${S.evacOn?` Evac: <b>${esc(S.evac.name)}</b>, Day 3, 7 to 11 AM.`:''}</div>`;
   const b=(id,f)=>{const e=$(id);if(e)e.onclick=f;};b('#aScav',scavenge);b('#aRest',()=>rest(2));b('#aSleep',()=>rest(6));b('#aWait',waitEvac);
   $('#actbox').classList.toggle('hidden',S.over);
   if(!$('#sugg').dataset.on){$('#sugg').dataset.on=1;$('#sugg').innerHTML=SUGGEST.map(x=>`<span class="chip" data-sg="${x}">${x}</span>`).join('');}
@@ -1079,6 +1366,7 @@ function render(){
   $('#inv').innerHTML=S.inv.map(i=>{const tags=[i.weapon?`dmg ${i.weapon}`:'',i.gun?`${i.ammo||0} rds`:'',i.light?'light':'',i.mask?'mask':'',i.comms?'comms':'',i.distract?'distract':'',i.charges?`×${i.charges}`:''].filter(Boolean).join(' · ');
     return`<div class="it"><span>${i.e}</span><span class="nm">${esc(i.n)} <small>${tags}</small></span>${i.use?`<button data-use="${i.uid}">Use</button>`:''}<button data-drop="${i.uid}">✕</button></div>`;}).join('')||'<div class="hint">Empty pockets.</div>';
   $('#log').innerHTML=S.logs.slice(0,80).map(l=>`<div class="${l.c}"><div class="ts">${l.ts}</div>${esc(l.txt)}</div>`).join('');
+  if(bldgOpen())renderFloor();
   if(L_.zone)L_.zone.setRadius(knownR());
   if(L_.me)L_.me.setLatLng([S.pos.lat,S.pos.lon]);
   for(const pl of TOWN.places){const m=L_.markers[pl.id];if(m)m.setIcon(poiIcon(pl,(pl.searched?'searched ':'')+(pl.id===S.at?'here':'')));}
@@ -1088,6 +1376,7 @@ $('#act').addEventListener('input',()=>{const v=$('#act').value,f=v.trim()?spell
   if(f!==v){box.innerHTML=`✏️ Did you mean: <b>${esc(f)}</b><button id="typoFix">Fix it</button>`;box.classList.remove('hidden');$('#typoFix').onclick=()=>{$('#act').value=f;box.classList.add('hidden');$('#act').focus();};}
   else box.classList.add('hidden');});$('#act').addEventListener('focus',()=>{if(MOB&&sheetState()==='min')setSheet('mid');});$('#act').onkeydown=e=>{if(e.key==='Enter')doAction();};
 $('#sugg').onclick=e=>{const c=e.target.closest('[data-sg]');if(c){$('#act').value=c.dataset.sg;$('#act').focus();}};
+$('#locbox').addEventListener('click',e=>{const r=e.target.closest('[data-room]');if(r)enterRoom(r.dataset.room);if(e.target.closest('#aInside'))showBuilding();});
 $('#inv').onclick=e=>{const u=e.target.closest('[data-use]'),d=e.target.closest('[data-drop]');if(u)useItem(+u.dataset.use);if(d)dropItem(+d.dataset.drop);};
 function log(txt,c=''){if(!S)return;S.logs.unshift({ts:fmtTime(S.t),txt,c});if(MOB&&tab!=='log')$('#logDot').innerHTML='<span class="dot"></span>';render();}
 
