@@ -7,6 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <title>Pocket Survival</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
 <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0c0d0d;--panel:#151818;--panel2:#1d2121;--line:#2c3232;--bone:#e9e4d8;--dim:#8f958f;--blood:#c8342c;--amber:#e3a33b;--green:#7fc95a;--accent:#c8342c}
@@ -179,7 +180,7 @@ details{margin-top:14px;color:var(--dim)}details input{margin-top:6px}
     <button id="go" class="primary big">Load my town</button>
     <button id="diag" style="width:100%;margin-top:8px">Check connections</button>
     <div id="status"></div>
-    <div class="hint" style="margin-top:8px">Map data and tiles © OpenStreetMap contributors. Places search by Photon (Komoot).</div>
+    <div class="hint" style="margin-top:8px">Map © OpenFreeMap, OpenMapTiles, OpenStreetMap contributors. Places search by Photon (Komoot).</div>
   </div>
 </div>
 
@@ -241,6 +242,8 @@ details{margin-top:14px;color:var(--dim)}details input{margin-top:6px}
 <div id="modal" class="overlay hidden"><div class="card" id="mcard"></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js"></script>
 <script>
 "use strict";
 const $=s=>document.querySelector(s);
@@ -368,7 +371,20 @@ function hud(){const h=$('#hud');if(!S||!MOB){h.classList.add('hidden');return;}
   h.innerHTML=`<div class="hrow"><span class="ht">${fmtTime(S.t)}${isNight()?' 🌙':''}${S.infected?' · 🦠':''}${S.dog?' · 🐕':''}</span><button id="hMe" title="Center on me">⌖</button><button id="hHelp">?</button></div>
     <div class="hb">${mini('❤️',S.hp,S.infected?'#9b59b6':'#c8342c')}${mini('🍗',S.food,'#e3a33b')}${mini('💧',S.water,'#4fb3ff')}${mini('⚡',S.energy,'#7fc95a')}</div>`;}
 $('#hud').onclick=e=>{if(e.target.closest('#hMe')&&S)centerOn(S.pos.lat,S.pos.lon);if(e.target.closest('#hHelp'))showHelp();};
-tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,className:'darktiles',attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+let usingVector=false;
+function rasterBasemap(){if(tiles){try{map.removeLayer(tiles);}catch(e){}}usingVector=false;
+  tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,className:'darktiles',attribution:'&copy; OpenStreetMap contributors'}).addTo(map);}
+function hasWebGL(){try{const c=document.createElement('canvas');return!!(c.getContext('webgl2')||c.getContext('webgl'));}catch(e){return false;}}
+(function vectorBasemap(){
+  if(!(window.maplibregl&&L.maplibreGL&&hasWebGL())){rasterBasemap();return;}
+  try{
+    tiles=L.maplibreGL({style:'https://tiles.openfreemap.org/styles/dark',attribution:'<a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'}).addTo(map);
+    usingVector=true;const gl=tiles.getMaplibreMap();let loaded=false,errs=0;
+    gl.on('load',()=>{loaded=true;});
+    gl.on('error',()=>{if(++errs>=6&&usingVector&&!loaded)rasterBasemap();});
+    setTimeout(()=>{if(usingVector&&!loaded)rasterBasemap();},12000);
+  }catch(e){rasterBasemap();}
+})();
 map.on('click',e=>onMapClick(e.latlng.lat,e.latlng.lng,null));
 
 function fetchT(u,o={},ms=20000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(u,{...o,signal:c.signal}).finally(()=>clearTimeout(t));}
