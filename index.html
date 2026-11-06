@@ -118,6 +118,8 @@ details{margin-top:14px;color:var(--dim)}details input{margin-top:6px}
 .btns button small{float:right;color:var(--dim)}
 .mtitle{font-size:22px;margin:0 0 8px;color:var(--accent)}
 .hint{color:var(--dim);font-size:12px}
+#typo button{padding:3px 10px;margin-left:6px;font-size:13px}
+#typo b{color:var(--bone)}
 #sugg .chip{cursor:pointer;font-size:12px;padding:4px 9px}
 .encin{margin-top:10px}
 .story p{margin:6px 0}
@@ -137,8 +139,8 @@ details{margin-top:14px;color:var(--dim)}details input{margin-top:6px}
     <div class="bars" id="bars"></div>
     <div class="box tab-here" id="locbox"><h3>Waiting to start…</h3><div class="hint">Load your town to begin.</div></div>
     <div class="box hidden tab-here" id="actbox"><h3>What do you do here?</h3>
-      <div class="row"><input id="act" maxlength="160" placeholder="e.g. block the doors with the shelves"><button id="aDo" class="primary shrink">Do it</button></div>
-      <div class="chips" id="sugg" style="margin-top:8px"></div><div class="hint" id="actHint" style="margin-top:6px"></div></div>
+      <div class="row"><input id="act" spellcheck="true" autocorrect="on" autocapitalize="sentences" autocomplete="off" maxlength="160" placeholder="e.g. block the doors with the shelves"><button id="aDo" class="primary shrink">Do it</button></div>
+      <div id="typo" class="hint hidden" style="margin-top:6px"></div><div class="chips" id="sugg" style="margin-top:8px"></div><div class="hint" id="actHint" style="margin-top:6px"></div></div>
     <div class="box tab-bag"><h3>Inventory <small class="hint" id="cap"></small></h3><div class="inv" id="inv"></div></div>
     <div class="box tab-log"><h3>Log</h3><div id="log"></div></div>
   </div>
@@ -164,7 +166,7 @@ details{margin-top:14px;color:var(--dim)}details input{margin-top:6px}
     <div class="chips" id="scens"></div>
     <label>What's in your pockets? <span id="pcount"></span></label>
     <div class="chips" id="pockets"></div>
-    <div class="row" style="margin-top:8px"><input id="custom" placeholder="Add your own (e.g. 'pepper spray')"><button id="addc" class="shrink">Add</button></div>
+    <div class="row" style="margin-top:8px"><input id="custom" spellcheck="true" autocorrect="on" autocapitalize="sentences" autocomplete="off" placeholder="Add your own (e.g. 'pepper spray')"><button id="addc" class="shrink">Add</button></div>
     <label>AI narrator</label>
     <select id="aimode">
       <option value="free" selected>Free online AI (no setup)</option>
@@ -898,7 +900,7 @@ async function encounter(where,o={}){
   opts.push({label:'🫥 Hide',chance:hideC,k:'hide'});
   opts.push({label:'✍️ Do what I typed above',k:'custom'});
   const i=await modal(`${art(artForFoe(foe),night)}<h2 class="mtitle">${['Trouble','Danger','RUN'][sev]}</h2><p>${fmtTime(S.t)}. ${esc(cap(where))}, you run into <b>${foe}</b>.${fortHere?' Your barricade gives you an edge.':''}</p><p class="hint">Health ${Math.round(S.hp)} · Energy ${Math.round(S.energy)}${night?' · It\'s dark':''}</p>
-    <input id="encTxt" class="encin" maxlength="120" placeholder="Or type your own move, e.g. throw the gum and climb onto the car">`,opts);
+    <input id="encTxt" spellcheck="true" autocorrect="on" autocapitalize="sentences" autocomplete="off" class="encin" maxlength="120" placeholder="Or type your own move, e.g. throw the gum and climb onto the car">`,opts);
   const typed=(($('#encTxt')||{}).value||'').trim();
   let op=opts[i];let chance=op.chance,txt='',dmg=0,story='';
   if(op.k==='custom'){const c=customMove(typed);chance=c.chance;op={k:c.k,label:typed};}
@@ -926,7 +928,28 @@ async function encounter(where,o={}){
 }
 const cap=s=>s[0].toUpperCase()+s.slice(1);
 function findMentioned(t){t=t.toLowerCase();return S.inv.filter(i=>{const w=i.n.toLowerCase().replace(/\(.*\)/,'').trim();return t.includes(w)||w.split(' ').some(x=>x.length>3&&t.includes(x));});}
-function customMove(t){
+/* ---------- SPELL CHECK ---------- */
+const VOCAB=('barricade barricading block blocking board fortify wedge lock push pull drag door doors shelf shelves desk table chair secure reinforce trap tripwire alarm cans bells string '+
+ 'look scout watch window windows roof climb peek lookout search check raid loot find scavenge medicine meds pills bandage bandages antibiotics food water weapon weapons tools '+
+ 'knife treat wound wounds heal first aid eat drink hide quiet wait hunker fire cook warm craft make build tape spear club call phone radio signal sleep rest nap throw toss '+
+ 'distract noise run attack hit stab swing smash shoot kick punch fight car truck fence tree ladder under crawl backroom back room front counter basement upstairs stairs '+
+ 'kitchen bathroom office storage closet behind inside outside around through with the and then into onto cover barrier escape sneak quietly carefully slowly quickly '+
+ 'zombie zombies infected looter looters drone gas mask cloud rope duct shelter barricades boarded '+
+ 'broom mop bat cart vending machine couch sofa bed fridge freezer register aisle gun pistol ammo crowbar hammer axe flashlight lighter bottle bottles keys wallet backpack bag blanket '+
+ 'jacket coat map note sign help survivor survivors people dog wire nails wood plank planks glass mirror light lights power generator garage house store shop building street alley yard '+
+ 'parking mall school church hospital police station pump gate wall walls hole floor ceiling vent truck van bike bicycle every everything something nothing myself them they there their').split(' ');
+function lev(a,b){if(Math.abs(a.length-b.length)>2)return 9;const m=a.length,n=b.length,d=[];for(let i=0;i<=m;i++){d[i]=[i];}for(let j=0;j<=n;j++)d[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){const c=a[i-1]===b[j-1]?0:1;d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c);
+    if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1);}return d[m][n];}
+function spellFix(text){
+  const words=new Set(VOCAB);if(S)S.inv.forEach(i=>i.n.toLowerCase().split(/\W+/).forEach(w=>w&&words.add(w)));
+  const list=[...words];let changed=false;
+  const out=text.replace(/[A-Za-z']+/g,w=>{const lw=w.toLowerCase();if(lw.length<4||words.has(lw))return w;
+    const max=lw.length>=7?2:1;let best=null,bd=max+1;for(const v of list){if(v.length<3)continue;const d=lev(lw,v);if(d<bd){bd=d;best=v;}}
+    if(best&&bd<=max){changed=true;return w[0]===w[0].toUpperCase()?best[0].toUpperCase()+best.slice(1):best;}return w;});
+  return changed?out:text;
+}
+function customMove(t){t=spellFix(t);
   const m=findMentioned(t);let chance=.3,k='chide';
   const wpn=m.filter(i=>i.weapon).sort((a,b)=>b.weapon-a.weapon)[0],dis=m.find(i=>i.distract);
   if(/hit|stab|swing|smash|fight|attack|kill|shoot|bash|punch|kick/i.test(t)){k='cfight';chance=.2+(wpn?.09*wpn.weapon:0);}
@@ -947,7 +970,7 @@ async function doAction(){
   if(!res)res=localResolve(text,p);
   $('#actHint').textContent='';
   await applyResolution(res,text,p,ai);
-  $('#act').value='';$('#aDo').disabled=false;busy=false;render();
+  $('#act').value='';$('#typo').classList.add('hidden');$('#aDo').disabled=false;busy=false;render();
 }
 async function aiResolve(text,p){
   const allowed=[...new Set([...(LOOT[p.cat]||[]),...AI_EXTRA])];
@@ -966,7 +989,7 @@ Reply with ONLY a JSON object, no other text:
   if((p.searched||0)>=4)j.items_found=[];
   return j;
 }
-function localResolve(t,p){
+function localResolve(t,p){t=spellFix(t);
   const T=t.toLowerCase(),has=re=>S.inv.find(i=>re.test(i.n));
   if(/barricade|block|board|fortify|wedge|lock|push.*(door|shelf|desk|table)|secure|reinforce/.test(T)){
     const tool=has(/hammer|duct tape|rope|crowbar/i);
@@ -1060,7 +1083,10 @@ function render(){
   if(L_.me)L_.me.setLatLng([S.pos.lat,S.pos.lon]);
   for(const pl of TOWN.places){const m=L_.markers[pl.id];if(m)m.setIcon(poiIcon(pl,(pl.searched?'searched ':'')+(pl.id===S.at?'here':'')));}
 }
-$('#aDo').onclick=doAction;$('#act').addEventListener('focus',()=>{if(MOB&&sheetState()==='min')setSheet('mid');});$('#act').onkeydown=e=>{if(e.key==='Enter')doAction();};
+$('#aDo').onclick=doAction;
+$('#act').addEventListener('input',()=>{const v=$('#act').value,f=v.trim()?spellFix(v):v,box=$('#typo');
+  if(f!==v){box.innerHTML=`✏️ Did you mean: <b>${esc(f)}</b><button id="typoFix">Fix it</button>`;box.classList.remove('hidden');$('#typoFix').onclick=()=>{$('#act').value=f;box.classList.add('hidden');$('#act').focus();};}
+  else box.classList.add('hidden');});$('#act').addEventListener('focus',()=>{if(MOB&&sheetState()==='min')setSheet('mid');});$('#act').onkeydown=e=>{if(e.key==='Enter')doAction();};
 $('#sugg').onclick=e=>{const c=e.target.closest('[data-sg]');if(c){$('#act').value=c.dataset.sg;$('#act').focus();}};
 $('#inv').onclick=e=>{const u=e.target.closest('[data-use]'),d=e.target.closest('[data-drop]');if(u)useItem(+u.dataset.use);if(d)dropItem(+d.dataset.drop);};
 function log(txt,c=''){if(!S)return;S.logs.unshift({ts:fmtTime(S.t),txt,c});if(MOB&&tab!=='log')$('#logDot').innerHTML='<span class="dot"></span>';render();}
