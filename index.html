@@ -59,6 +59,7 @@ label{display:block;margin:14px 0 6px;color:var(--dim);font-size:12px;text-trans
   .leaflet-top{top:calc(env(safe-area-inset-top) + 74px)}
   .leaflet-control-zoom{display:none}
   #banner{top:calc(env(safe-area-inset-top) + 10px);width:94%}
+  #banner.walk{top:calc(env(safe-area-inset-top) + 84px);z-index:1060}
   #banner button{padding:10px 14px}
   .overlay{align-items:flex-end;padding:0}
   .card{border-radius:16px 16px 0 0;max-height:92dvh;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-width:100%}
@@ -105,6 +106,9 @@ details{margin-top:14px;color:var(--dim)}details input{margin-top:6px}
 .poi{background:none;border:none}
 .poi span{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(15,17,17,.85);border:1px solid #444;font-size:14px}
 .poi.searched span{opacity:.45}
+.hs span{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:6px;background:rgba(15,17,17,.75);border:1px solid #3a3f3f;font-size:12px;opacity:.85}
+.me.walking span{animation:wk .45s ease-in-out infinite}
+@keyframes wk{50%{margin-top:-4px}}
 .poi.here span{border:2px solid var(--bone)}
 .me span{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--bone);font-size:20px;box-shadow:0 0 0 4px rgba(233,228,216,.3)}
 .org span,.evac span{display:flex;align-items:center;justify-content:center;width:32px;height:32px;font-size:24px}
@@ -328,7 +332,7 @@ const CATS={grocery:{e:'🛒',l:'Grocery',dm:.05},pharmacy:{e:'💊',l:'Pharmacy
   park:{e:'🌳',l:'Park',dm:-.03},home:{e:'🏠',l:'Your starting point',dm:-.05},
   office:{e:'🏦',l:'Bank / post office',dm:0},library:{e:'📚',l:'Library',dm:-.05},hotel:{e:'🏨',l:'Hotel / motel',dm:.03},auto:{e:'🔧',l:'Auto shop',dm:0},
   clothing:{e:'👕',l:'Clothing store',dm:0},electronics:{e:'📱',l:'Electronics store',dm:0},farm:{e:'🌾',l:'Farm supply',dm:-.02},pet:{e:'🐾',l:'Pet store',dm:0},
-  house:{e:'🏚️',l:'House',dm:-.02}};
+  house:{e:'🏚️',l:'House',dm:-.02},shop:{e:'🏪',l:'Shop',dm:0},business:{e:'🏢',l:'Business',dm:0}};
 const LOOT={grocery:['beans','beans','chips','bread','water','water','sportsdrink','energy','painkillers','batteries','lighter'],
   pharmacy:['bandage','bandage','firstaid','antibiotics','antibiotics','painkillers','water','energy','chips'],
   hardware:['crowbar','hammer','machete','flashlight','batteries','ducttape','rope','gasmask','axe'],
@@ -341,7 +345,8 @@ const LOOT={grocery:['beans','beans','chips','bread','water','water','sportsdrin
   park:['water'],home:['beans','water','kitchenknife','flashlight','bandage','bread'],
   office:['water','chips','firstaid','flashlight','energy'],library:['water','chips','bandage','flashlight','radio'],hotel:['water','chips','bandage','sportsdrink','bread','flashlight'],
   auto:['crowbar','ducttape','flare','batteries','rope','hammer','powerbank'],clothing:['backpack','bandana','rope'],electronics:['powerbank','batteries','radio','flashlight'],
-  farm:['machete','rope','axe','water','flare','ducttape'],pet:['rope','water','chips'],house:['beans','water','kitchenknife','flashlight','bandage','bread','painkillers','energy']};
+  farm:['machete','rope','axe','water','flare','ducttape'],pet:['rope','water','chips'],house:['beans','water','kitchenknife','flashlight','bandage','bread','painkillers','energy'],
+  shop:['chips','water','batteries','lighter','bandana','ducttape','energy','flashlight'],business:['water','chips','firstaid','flashlight','energy','batteries']};
 function catOf(t){const s=t.shop||'',a=t.amenity||'';
   if(/^(supermarket|convenience|grocery|greengrocer|alcohol|beverages|bakery|butcher)$/.test(s))return'grocery';
   if(/^(bank|post_office)$/.test(a))return'office';if(a==='library')return'library';if(/^(hotel|motel|guest_house)$/.test(t.tourism||''))return'hotel';
@@ -350,8 +355,12 @@ function catOf(t){const s=t.shop||'',a=t.amenity||'';
   if(/^(hardware|doityourself)$/.test(s))return'hardware';if(/^(sports|outdoor)$/.test(s))return'sports';if(a==='fuel')return'gas';
   if(/^(hospital|clinic|doctors)$/.test(a))return'medical';if(a==='police')return'police';if(a==='fire_station')return'fire';if(a==='school')return'school';
   if(/^(restaurant|fast_food|cafe|bar|pub)$/.test(a))return'food';if(a==='place_of_worship')return'church';if(/^(department_store|variety_store|general)$/.test(s))return'store';
-  if(t.leisure==='park')return'park';return null;}
-const CAPS={food:16,park:10};
+  if(t.leisure==='park')return'park';
+  if(/^(dentist|veterinary)$/.test(a))return'medical';if(/^(college|kindergarten)$/.test(a))return'school';if(a==='car_wash')return'auto';
+  if(/^(fitness_centre|sports_centre)$/.test(t.leisure||''))return'sports';
+  if(s)return'shop';if(t.office||t.craft||/^(community_centre|townhall|courthouse|cinema|theatre|social_facility|nightclub|arts_centre)$/.test(a))return'business';
+  return null;}
+const CAPS={food:30,park:15,shop:60,business:40};
 
 /* ---------- STATE ---------- */
 let map,tiles,S=null,TOWN=null,phase='setup',busy=false,uid=0;
@@ -447,11 +456,15 @@ async function geocode(q,cc){
   return null;
 }
 async function overpass(c,R){
-  const q=`[out:json][timeout:12];(
-nwr["shop"~"^(supermarket|convenience|grocery|greengrocer|alcohol|beverages|bakery|butcher|chemist|hardware|doityourself|sports|outdoor|department_store|variety_store|general|car_repair|car_parts|tyres|clothes|shoes|electronics|mobile_phone|computer|farm|agrarian|garden_centre|pet)$"](around:${R},${c.lat},${c.lon});
-nwr["amenity"~"^(pharmacy|fuel|hospital|clinic|doctors|police|fire_station|school|restaurant|fast_food|cafe|bar|pub|place_of_worship|bank|post_office|library)$"](around:${R},${c.lat},${c.lon});
-nwr["tourism"~"^(hotel|motel|guest_house)$"](around:${R},${c.lat},${c.lon});
-nwr["leisure"="park"]["name"](around:${R},${c.lat},${c.lon}););out center tags;`;
+  const A=`(around:${R},${c.lat},${c.lon})`;
+  const q=`[out:json][timeout:15];(
+nwr["shop"]${A};
+nwr["amenity"~"^(pharmacy|fuel|hospital|clinic|doctors|dentist|veterinary|police|fire_station|school|college|kindergarten|restaurant|fast_food|cafe|bar|pub|place_of_worship|bank|post_office|library|community_centre|townhall|courthouse|cinema|theatre|car_wash|social_facility|nightclub|arts_centre)$"]${A};
+nwr["tourism"~"^(hotel|motel|guest_house)$"]${A};
+nwr["leisure"~"^(park|fitness_centre|sports_centre)$"]["name"]${A};
+nwr["office"]["name"]${A};
+nwr["craft"]["name"]${A};
+);out center tags 2000;`;
   for(const ep of['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter']){
     $('#status').textContent='Scouting real places… ('+ep.split('/')[2]+')';
     try{const r=await fetchT(ep,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)},12000);
@@ -522,12 +535,13 @@ function fakePlaces(c,R){
 
 function toPlaces(els,c){
   const byCat={};
-  for(const el of els){const t=el.tags||{};const nm=t.name||t.brand;if(!nm)continue;const cat=catOf(t);if(!cat)continue;
+  const lab=v=>v?String(v).split(';')[0].replace(/_/g,' ').replace(/^./,c=>c.toUpperCase()):'';
+  for(const el of els){const t=el.tags||{};const nm=t.name||t.brand||(t.shop&&t.shop!=='yes'?lab(t.shop):'')||(t.amenity&&t.amenity!=='parking'?lab(t.amenity):'');if(!nm)continue;const cat=catOf(t);if(!cat)continue;
     const lat=el.lat??(el.center&&el.center.lat),lon=el.lon??(el.center&&el.center.lon);if(lat==null)continue;
     (byCat[cat]=byCat[cat]||[]).push({id:String(el.type)[0]+el.id,name:nm,cat,lat:+lat,lon:+lon,d:hav(c,{lat:+lat,lon:+lon})});}
   const places=[];
   for(const[cat,arr]of Object.entries(byCat)){arr.sort((a,b)=>a.d-b.d);let n=0;
-    for(const p of arr){if(places.some(q=>q.cat===cat&&(q.id===p.id||(q.name===p.name&&hav(q,p)<150))))continue;places.push(p);if(++n>=(CAPS[cat]||20))break;}}
+    for(const p of arr){if(places.some(q=>q.cat===cat&&(q.id===p.id||(q.name===p.name&&hav(q,p)<150))))continue;places.push(p);if(++n>=(CAPS[cat]||40))break;}}
   return places;
 }
 const NOMI_Q=['supermarket','convenience store','pharmacy','hardware store','gas station','hospital','police','fire station','school','restaurant','fast food','church','park','dollar store','bank','library','motel','auto repair'];
@@ -563,7 +577,7 @@ async function gatherFast(c,R,onMore){
 function addLatePlaces(list,key){
   if(!TOWN)return;let added=0;
   for(const p of list){if(TOWN.places.some(q=>q.id===p.id||(q.cat===p.cat&&q.name===p.name&&hav(q,p)<150)))continue;TOWN.places.push(p);if(phase!=='setup')addPlaceMarker(p);added++;}
-  if(added){try{localStorage.setItem(key,JSON.stringify(TOWN));}catch(e){}if(S)log(`📍 ${added} more place${added>1?"s":""} found nearby.`,'sys');}
+  if(added){if(key)try{localStorage.setItem(key,JSON.stringify(TOWN));}catch(e){}if(S)log(`📍 ${added} more place${added>1?"s":""} found nearby.`,'sys');}
 }
 async function gatherPlaces(c,R){
   let els=(await overpass(c,R))||[];let places=toPlaces(els,c);
@@ -598,7 +612,7 @@ function beginPlacement(){
   $('#where').textContent=TOWN.name;$('#scenName').textContent=SCENS[scenKey].name;
   $('#log').innerHTML='';$('#inv').innerHTML='';$('#bars').innerHTML='';$('#clock').textContent='--';
   $('#locbox').innerHTML='<h3>Set the scene</h3><div class="hint">Tap the map or a place marker. First where you are, then where it starts.</div>';
-  phase='start';$('#actbox').classList.add('hidden');$('#bldg').classList.add('hidden');hud();if(MOB)setSheet('min');
+  phase='start';resetHouses();$('#actbox').classList.add('hidden');$('#bldg').classList.add('hidden');hud();if(MOB)setSheet('min');
   if(TOWN.geo){onMapClick(TOWN.geo.lat,TOWN.geo.lon,null);if(tmp.start&&!tmp.start.place)tmp.start.name='Your real location';map.setView([TOWN.geo.lat,TOWN.geo.lon],15);}
   showBanner();
 }
@@ -662,9 +676,10 @@ function startGame(){
   L_.zone=L.circle([S.origin.lat,S.origin.lon],{radius:sc.r0,color:sc.color,weight:2,fillOpacity:.18,interactive:false}).addTo(map);
   L_.org=L.marker([S.origin.lat,S.origin.lon],{icon:L.divIcon({className:'org',html:`<span>${sc.origIcon}</span>`,iconSize:[32,32]}),interactive:false}).addTo(map);
   L_.me=L.marker([S.pos.lat,S.pos.lon],{icon:L.divIcon({className:'me',html:'<span>🧍</span>',iconSize:[34,34]}),interactive:false,zIndexOffset:1000}).addTo(map);
-  phase='play';setTab('here');setSheet(MOB?'min':'mid');setTimeout(()=>showBuilding(),400);
-  const intro=sc.intro(S.origin.name);
+  phase='play';setTab('here');setSheet(MOB?'min':'mid');resetHouses();EXPLORED.length=0;
+  const scene=openingScene(startPlace),intro=scene.join(' ');
   log(intro,'sys');
+  setTimeout(async()=>{const k=scenKeyOf();await modal(`${art(k==='zombie'?'zombie2':k==='gas'?'cloud':'lights',false)}<h2 class="mtitle">7:00 AM</h2><div class="story">${scene.map(x=>`<p>${esc(x)}</p>`).join('')}</div>`,[{label:'Survive',cls:'primary'}]);showBuilding();},150);
   log(`Goal: stay alive. Word of an evacuation should come through. ${hasComms()?'Your phone will pick it up.':'With no phone or radio you’ll hear late, so listen for it.'} Tap places on the map to move. Scavenge for supplies.`,'sys');
   narrate(`The game begins. ${intro} Player is at ${startPlace.name} carrying: ${S.inv.map(i=>i.n).join(', ')}.`);
   render();
@@ -752,16 +767,24 @@ async function routeEvent(story){
 }
 async function travelTo(p){
   if(busy||S.over||p.id===S.at)return;busy=true;map.closePopup();AI.pending=null;$('#bldg').classList.add('hidden');
-  const from={...S.pos},d=hav(from,p),speed=S.energy<15?3:4.5,hrs=d/1000/speed;
-  let inz=0;for(let i=1;i<=20;i++)if(inZone(lerp(from,p,i/20),S.t+hrs/2))inz++;
+  const from={...S.pos};walkBanner('🧭 Finding a way…');
+  const rt=await getRoute(from,p),path=rt.path,cum=cumOf(path),d=rt.dist,speed=S.energy<15?3:4.5,hrs=d/1000/speed;
+  let inz=0;for(let i=1;i<=20;i++)if(inZone(pathAt(path,cum,i/20),S.t+hrs/2))inz++;
   const pEnc=clamp((.06+.5*(inz/20)+(isNight()?.1:0)+(d>1500?.05:0))*S.scen.encMul*alertMul(),0,.85);
   const startT=S.t,story=[flavor(inz>4)];
   S.energy=Math.max(0,S.energy-7*d/1000);
-  advance(hrs,{travel:true,from,to:p});
-  if(!S.over){
-    if(Math.random()<pEnc){const r=await encounter(`on the way to ${p.name}`,{travel:true});if(r)story.push(r);}
-    else if(Math.random()<.4)await routeEvent(story);
-  }
+  const trail=L.polyline(path.map(q=>[q.lat,q.lon]),{color:getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#c8342c',weight:4,opacity:.85,dashArray:'2 9',lineCap:'round',interactive:false}).addTo(map);
+  try{map.fitBounds(trail.getBounds(),{paddingTopLeft:[40,MOB?110:40],paddingBottomRight:[40,(MOB?sheetPx():0)+40],maxZoom:17,animate:true});}catch(e){}
+  await new Promise(r=>setTimeout(r,350));
+  walkBanner(`🚶 Walking to ${esc(p.name)} · ~${Math.max(1,Math.round(hrs*60))} min`);
+  const ms=clamp(1400+d*1.1,1800,6000),enc=Math.random()<pEnc,ev=!enc&&Math.random()<.4,mid=rnd(.35,.65);
+  if(enc||ev){
+    await animateAlong(path,cum,0,mid,ms*mid);advance(hrs*mid,{travel:true,from,to:pathAt(path,cum,mid)});
+    walkBanner('');L_.me.setIcon(standIcon());
+    if(!S.over){if(enc){const r=await encounter(`on the way to ${p.name}`,{travel:true});if(r)story.push(r);}else await routeEvent(story);}
+    if(!S.over){walkBanner(`🚶 Walking to ${esc(p.name)}`);await animateAlong(path,cum,mid,1,ms*(1-mid));advance(hrs*(1-mid),{travel:true,from:pathAt(path,cum,mid),to:p});}
+  }else{await animateAlong(path,cum,0,1,ms);advance(hrs,{travel:true,from,to:p});}
+  walkBanner('');S.walkPos=null;if(L_.me)L_.me.setIcon(standIcon());setTimeout(()=>{try{map.removeLayer(trail);}catch(e){}},1500);
   if(S.over){busy=false;render();return;}
   S.pos={lat:p.lat,lon:p.lon};S.at=p.id;S.room=null;render();centerOn(p.lat,p.lon);const first=!S.visited.has(p.id);S.visited.add(p.id);
   const dg=danger(p),mins=Math.round((S.t-startT)*60);
@@ -769,7 +792,7 @@ async function travelTo(p){
   log(`On the way to ${p.name}: ${story.join(' ')} Danger here: ${dg}.`,dg==='overrun'||dg==='high'?'bad':'');
   await modal(`<h2 class="mtitle">${CATS[p.cat].e} ${esc(p.name)}</h2><div class="story">${story.map(x=>`<p>${esc(x)}</p>`).join('')}</div><p><span class="badge d-${dg}">${dg}</span> <span class="hint">${fmtTime(S.t)}</span></p>`,[{label:'Continue',cls:'primary'}]);
   narrate(`Player walked ${(d/1000).toFixed(1)} km to ${p.name}, a ${CATS[p.cat].l}. What happened: ${story.join(' ')} Danger level: ${dg}. It is ${isNight()?'night':'daytime'}.`);
-  checkEvents();busy=false;render();if(!S.over)showBuilding();
+  checkEvents();busy=false;render();if(!S.over)showBuilding();exploreAround(p);
 }
 async function scavenge(){
   if(busy||S.over)return;busy=true;const p=place(S.at);advance(1);
@@ -1133,6 +1156,11 @@ const ROOMS={
     ['Grooming room','✂️',['bandage'],.03,'Tubs and cages, all empty.'],
     ['Stockroom','📦',['rope','water'],.03,'Leashes and supplies.']]
 };
+ROOMS.shop=[['Sales floor','🏪',['chips','batteries','lighter'],.03,'Shelves of whatever they sold, knocked around.'],['Checkout counter','🧾',['lighter','energy','chips'],.03,'The register is open.'],
+  ['Restrooms','🚻',[],.1,'A single toilet. The door is jammed.',1],['Stockroom','📦',['ducttape','water','batteries','flashlight'],.05,'Back stock and boxes.'],['Back office','🗄️',['firstaid','keyring','flashlight'],0,'A desk, a safe and a first aid kit.',1]];
+ROOMS.business=[['Lobby','🪑',['water'],.05,'Magazines on a coffee table. Nobody at the desk.'],['Offices','🗄️',['flashlight','radio','keyring'],.03,'Cubicles and dark monitors.'],
+  ['Break room','☕',['chips','water','energy','bread'],0,'A fridge with somebody\'s lunch.'],['Restrooms','🚻',[],.1,'The automatic lights click on.'],['Supply closet','🧰',['firstaid','ducttape','batteries'],0,'Shelves of supplies.'],
+  ['Server room','🖥️',['powerbank','batteries'],.02,'Cold and humming.',1]];
 ROOMS.house=ROOMS.home.concat([['Attic','📦',['backpack','rope'],.05,'Hot, dusty and dark.',1]]);
 function hashStr(s){let h=0;for(const ch of s)h=(h*31+ch.charCodeAt(0))|0;return Math.abs(h);}
 function roomsOf(p){
@@ -1242,6 +1270,94 @@ async function lockedDoor(p,r){
   if(o.k==='break'||o.k==='kick'){if(Math.random()<clamp(locEnc(p)*1.6+.08,0,.85))await encounter(`drawn by the noise at ${p.name}`);}
   if(S.hp<=0&&!S.over)gameOver(false,'You pushed yourself too far.');
   return win&&!S.over;
+}
+
+/* ---------- OPENING SCENE ---------- */
+const OPENERS={grocery:"You're in the checkout line at {n} with a basket of groceries",store:"You're wandering the aisles at {n}",food:"You're halfway through breakfast at {n}",
+  pharmacy:"You're waiting on a prescription at {n}",hardware:"You're hunting for a part in the tool aisle at {n}",sports:"You're trying on boots at {n}",gas:"You're paying for gas inside {n}",
+  medical:"You're sitting in the waiting room at {n}",police:"You're at the front desk of {n}, filing a report",fire:"You're dropping off a donation at {n}",
+  school:"You're dropping something off at the front office of {n}",church:"You're helping set up for an event at {n}",park:"You're out for an early walk in {n}",
+  office:"You're standing in line at {n}",library:"You're returning books at {n}",hotel:"You're checking out of {n}",auto:"You're waiting on an oil change at {n}",
+  clothing:"You're browsing the racks at {n}",electronics:"You're looking at phone chargers at {n}",farm:"You're loading feed at {n}",pet:"You're buying dog food at {n}",
+  shop:"You're browsing inside {n}",business:"You're running an errand at {n}",home:"You're at home, pouring your first cup of coffee",house:"You're at a friend's place on the edge of town"};
+const HAPPENS={
+  zombie:[" when sirens tear past outside. Then another. Then four more.",
+    " Every phone in the room shrieks at once: ⚠️ EMERGENCY ALERT. Shelter in place. Reports of violent attacks near {o}. Avoid the area.",
+    " Someone by the window says, quietly, \"Did that guy just bite him?\""],
+  gas:[" when a deep boom rattles the windows.",
+    " Phones blare: ⚠️ HAZMAT ALERT. Toxic chemical release near {o}. Shelter in place. Close all windows.",
+    " Through the glass, a yellow-green haze is rolling low down the street."],
+  alien:[" when every phone in the room plays the same low tone at the same time.",
+    " The screen just says: ⚠️ REMAIN INDOORS. Nothing else.",
+    " The lights flicker. Outside, people stand frozen in the street, staring at the sky over {o}."]};
+function openingScene(p){
+  const k=scenKeyOf(),biz=!['home','house','park'].includes(p.cat);
+  const o=(OPENERS[p.cat]||OPENERS.business).replace('{n}',p.name),h=HAPPENS[k].map(x=>x.replace('{o}',S.origin.name));
+  if(['home','house'].includes(p.cat))h[2]={zombie:'Outside, a neighbor is screaming. Then the screaming stops.',gas:'You can smell it already, sharp and metallic, seeping in around the door.',alien:'Outside, your neighbor is standing in his yard, staring up. He hasn\'t blinked in a full minute.'}[k];
+  const react=biz?(k==='alien'?' The staff are just... gone. Their aprons are lying on the floor.':' An employee rushes past you to lock the front doors.'):'';
+  return[`7:00 AM. ${o}${h[0]}`,h[1],h[2]+react,"You've got what's in your pockets."];
+}
+
+/* ---------- WALKING ANIMATION ---------- */
+async function getRoute(a,b){
+  try{const u=`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${a.lon},${a.lat};${b.lon},${b.lat}?overview=full&geometries=geojson`;
+    const r=await fetchT(u,{},3000);if(r.ok){const j=await r.json();const c=j.routes&&j.routes[0];
+      if(c&&c.geometry&&c.geometry.coordinates.length>1){const path=c.geometry.coordinates.map(([lo,la])=>({lat:la,lon:lo}));path.unshift({...a});path.push({lat:b.lat,lon:b.lon});return{path,dist:Math.max(c.distance,hav(a,b))};}}}catch(e){}
+  return{path:[{...a},{lat:b.lat,lon:b.lon}],dist:hav(a,b)*1.25};
+}
+function cumOf(path){const c=[0];for(let i=1;i<path.length;i++)c.push(c[i-1]+hav(path[i-1],path[i]));return c;}
+function pathAt(path,cum,f){const tot=cum[cum.length-1]||1,t=clamp(f,0,1)*tot;let i=1;while(i<cum.length-1&&cum[i]<t)i++;const seg=(cum[i]-cum[i-1])||1;return lerp(path[i-1],path[i],clamp((t-cum[i-1])/seg,0,1));}
+function walkIcon(east){return L.divIcon({className:'me walking',html:`<span style="${east?'transform:scaleX(-1)':''}">🚶</span>`,iconSize:[34,34]});}
+function standIcon(){return L.divIcon({className:'me',html:'<span>🧍</span>',iconSize:[34,34]});}
+function animateAlong(path,cum,f0,f1,ms){return new Promise(res=>{
+  if(!L_.me||ms<=0){res();return;}const t0=performance.now();let lastEast=null;
+  const step=now=>{const k=Math.min(1,(now-t0)/ms),f=f0+(f1-f0)*k,pt=pathAt(path,cum,f),ah=pathAt(path,cum,Math.min(1,f+.02));
+    const east=ah.lon>=pt.lon;if(east!==lastEast){L_.me.setIcon(walkIcon(east));lastEast=east;}
+    S.walkPos=pt;L_.me.setLatLng([pt.lat,pt.lon]);if(k<1)requestAnimationFrame(step);else res();};
+  requestAnimationFrame(step);});}
+function walkBanner(txt){const b=$('#banner');if(!txt){b.classList.add('hidden');b.classList.remove('walk');return;}b.innerHTML=`<span>${txt}</span>`;b.classList.add('walk');b.classList.remove('hidden');}
+
+/* ---------- HOUSES (zoom in to see them) ---------- */
+const HOUSES={layer:null,cells:new Set(),ids:new Set(),loading:false};
+HOUSES.layer=L.layerGroup();
+map.on('moveend',()=>maybeLoadHouses());
+function resetHouses(){HOUSES.layer.clearLayers();HOUSES.cells.clear();HOUSES.ids.clear();}
+function maybeLoadHouses(){
+  if(phase!=='play'||!S||!TOWN)return;
+  if(map.getZoom()<16){if(map.hasLayer(HOUSES.layer))map.removeLayer(HOUSES.layer);return;}
+  if(!map.hasLayer(HOUSES.layer))HOUSES.layer.addTo(map);
+  const c=map.getCenter(),key=Math.round(c.lat*300)+','+Math.round(c.lng*300);
+  if(HOUSES.cells.has(key)||HOUSES.loading)return;HOUSES.cells.add(key);HOUSES.loading=true;
+  loadHouses(c.lat,c.lng).finally(()=>{HOUSES.loading=false;});
+}
+async function loadHouses(lat,lon){
+  const q=`[out:json][timeout:12];(way["building"~"^(house|residential|detached|semidetached_house|bungalow|terrace|apartments|farm|cabin|static_caravan)$"][!"shop"][!"amenity"](around:380,${lat},${lon});way["building"="yes"]["addr:housenumber"][!"shop"][!"amenity"](around:380,${lat},${lon}););out center tags 300;`;
+  for(const ep of['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter']){
+    try{const r=await fetchT(ep,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)},14000);
+      if(!r.ok)continue;const j=await r.json();addHouses(j.elements||[]);return;}catch(e){}
+  }
+}
+function addHouses(els){
+  let n=0;
+  for(const el of els){const c=el.center;if(!c||!TOWN)continue;const id='h'+el.id;if(HOUSES.ids.has(id)||TOWN.places.some(q=>q.id===id))continue;
+    if(TOWN.places.some(q=>q.cat!=='house'&&hav(q,{lat:c.lat,lon:c.lon})<20))continue;
+    const t=el.tags||{},addr=t['addr:housenumber']&&t['addr:street']?`${t['addr:housenumber']} ${t['addr:street']}`:'';
+    const kind=t.building==='apartments'?'Apartment building':t.building==='farm'?'Farmhouse':/caravan/.test(t.building)?'Mobile home':t.building==='cabin'?'Cabin':'House';
+    const name=addr?`${kind} at ${addr}`:kind;HOUSES.ids.add(id);n++;
+    const m=L.marker([c.lat,c.lon],{icon:L.divIcon({className:'hs',html:'<span>🏠</span>',iconSize:MOB?[26,26]:[20,20]})}).addTo(HOUSES.layer);
+    m.on('click',()=>{if(phase!=='play'||!S)return;let p=TOWN.places.find(q=>q.id===id);
+      if(!p){p={id,name,cat:'house',lat:c.lat,lon:c.lon};TOWN.places.push(p);addPlaceMarker(p);HOUSES.layer.removeLayer(m);}openPlacePopup(p);});
+  }
+  if(n&&S&&!S.flags.houseTip){S.flags.houseTip=1;log('🏠 Houses near you are on the map now. Tap one to search it.','sys');}
+}
+
+/* ---------- LOAD MORE PLACES AS YOU EXPLORE ---------- */
+const EXPLORED=[];
+async function exploreAround(p){
+  if(!TOWN)return;if(!EXPLORED.length)EXPLORED.push({lat:TOWN.center.lat,lon:TOWN.center.lon,r:TOWN.R});
+  if(EXPLORED.some(e=>hav(e,p)<e.r*.6))return;
+  const R=1500;EXPLORED.push({lat:p.lat,lon:p.lon,r:R});
+  const els=await overpass({lat:p.lat,lon:p.lon},R);if(els)addLatePlaces(toPlaces(els,p),null);
 }
 
 /* ---------- FREE-TEXT ACTIONS AT A LOCATION ---------- */
@@ -1368,7 +1484,7 @@ function render(){
   $('#log').innerHTML=S.logs.slice(0,80).map(l=>`<div class="${l.c}"><div class="ts">${l.ts}</div>${esc(l.txt)}</div>`).join('');
   if(bldgOpen())renderFloor();
   if(L_.zone)L_.zone.setRadius(knownR());
-  if(L_.me)L_.me.setLatLng([S.pos.lat,S.pos.lon]);
+  if(L_.me){const wp=S.walkPos||S.pos;L_.me.setLatLng([wp.lat,wp.lon]);}
   for(const pl of TOWN.places){const m=L_.markers[pl.id];if(m)m.setIcon(poiIcon(pl,(pl.searched?'searched ':'')+(pl.id===S.at?'here':'')));}
 }
 $('#aDo').onclick=doAction;
